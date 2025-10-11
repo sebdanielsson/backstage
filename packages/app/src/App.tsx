@@ -24,6 +24,7 @@ import { apis } from './apis';
 import { entityPage } from './components/catalog/EntityPage';
 import { searchPage } from './components/search/SearchPage';
 import { Root } from './components/Root';
+import { pocketIdOIDCAuthApiRef } from './apis';
 
 import {
   AlertDisplay,
@@ -58,7 +59,20 @@ const app = createApp({
     });
   },
   components: {
-    SignInPage: props => <SignInPage {...props} auto providers={['guest']} />,
+    SignInPage: props => (
+      <SignInPage
+        {...props}
+        providers={[
+          'guest',
+          {
+            id: 'pocketid-oidc',
+          title: 'Pocket-ID',
+          message: 'Sign in using Pocket-ID',
+          apiRef: pocketIdOIDCAuthApiRef,
+          },
+        ]}
+      />
+    ),
   },
 });
 
