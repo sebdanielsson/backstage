@@ -65,8 +65,7 @@ techdocs:
 auth:
   environment: development
   session:
-    # secret: ${AUTH_SESSION_SECRET}
-    secret: qDbFgPt3vVrm8TCDNQPW6PNsREBgQT9NkJMczs3hcEzm6Z4iDesM9PQXRYRh9kZG
+    secret: ${AUTH_SESSION_SECRET}
   # see https://backstage.io/docs/auth/ to learn about auth providers
   providers:
     pocketid-oidc:

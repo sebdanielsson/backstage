@@ -29,7 +29,18 @@ backend:
       #     $file: <file-path>/ca/server.crt
 
 auth:
+  environment: production
+  session:
+    secret: ${AUTH_SESSION_SECRET}
   providers:
+    pocketid-oidc:
+      production:
+        clientId: ${AUTH_CLIENT_ID}
+        clientSecret: ${AUTH_CLIENT_SECRET}
+        metadataUrl: ${AUTH_METADATA_URL}
+        authorizationUrl: ${AUTH_AUTHORIZATION_URL}
+        tokenUrl: ${AUTH_TOKEN_URL}
+        prompt: auto
     guest: {}
 
 catalog:
