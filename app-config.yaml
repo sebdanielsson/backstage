@@ -1,6 +1,8 @@
 app:
   title: Scaffolded Backstage App
   baseUrl: http://localhost:3000
+  # Enable redirect flow for authentication instead of popups
+  enableExperimentalRedirectFlow: true
 
 organization:
   name: My Company
