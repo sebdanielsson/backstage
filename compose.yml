@@ -10,11 +10,11 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - '${POSTGRES_PORT:-5432}:5432'
     networks:
       - backstage
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,7 +24,7 @@ services:
     container_name: backstage
     restart: unless-stopped
     ports:
-      - "${BACKSTAGE_PORT:-7007}:7007"
+      - '${BACKSTAGE_PORT:-7007}:7007'
     environment:
       NODE_ENV: production
       POSTGRES_HOST: postgres
@@ -48,7 +48,15 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7007/healthcheck"]
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:7007/healthcheck',
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
