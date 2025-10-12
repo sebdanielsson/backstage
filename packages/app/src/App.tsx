@@ -66,9 +66,9 @@ const app = createApp({
           'guest',
           {
             id: 'pocketid-oidc',
-          title: 'Pocket-ID',
-          message: 'Sign in using Pocket-ID',
-          apiRef: pocketIdOIDCAuthApiRef,
+            title: 'Pocket-ID',
+            message: 'Sign in using Pocket-ID',
+            apiRef: pocketIdOIDCAuthApiRef,
           },
         ]}
       />
