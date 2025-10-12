@@ -43,12 +43,23 @@ export const authModulePocketIDOIDCProvider = createBackendModule({
                   'Login failed, user profile does not contain a valid name',
                 );
               }
-              // should use users from catalog
+              
+              // Create user reference for the catalog
               const userRef = stringifyEntityRef({
                 kind: 'User',
                 name: info.profile.displayName!,
                 namespace: DEFAULT_NAMESPACE,
               });
+
+              // Note: The profile picture from OIDC (profile.picture) needs to be stored
+              // in the catalog entity's spec.profile.picture field to be displayed.
+              // This can be done by:
+              // 1. Manually adding it to your user entity YAML files
+              // 2. Using a custom entity provider to sync user data from your IdP
+              // 3. Using the Catalog API to create/update user entities programmatically
+              // 
+              // For more info, see:
+              // https://backstage.io/docs/features/software-catalog/descriptor-format#kind-user
 
               return ctx.issueToken({
                 claims: {
