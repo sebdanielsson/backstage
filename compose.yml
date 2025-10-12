@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres:18.0-trixie
+    container_name: backstage-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-backstage}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-backstage}
+      POSTGRES_DB: ${POSTGRES_DB:-backstage}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - backstage
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-backstage}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backstage:
+    image: sebdanielsson/backstage:latest
+    container_name: backstage
+    restart: unless-stopped
+    ports:
+      - "${BACKSTAGE_PORT:-7007}:7007"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-backstage}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-backstage}
+      POSTGRES_DB: ${POSTGRES_DB:-backstage}
+      AUTH_SESSION_SECRET: ${AUTH_SESSION_SECRET}
+      AUTH_CLIENT_ID: ${AUTH_CLIENT_ID}
+      AUTH_CLIENT_SECRET: ${AUTH_CLIENT_SECRET}
+      AUTH_METADATA_URL: ${AUTH_METADATA_URL}
+      AUTH_AUTHORIZATION_URL: ${AUTH_AUTHORIZATION_URL}
+      AUTH_TOKEN_URL: ${AUTH_TOKEN_URL}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      BACKEND_SECRET: ${BACKEND_SECRET}
+      NODE_ENV: production
+    volumes:
+      - ./app-config.production.yaml:/app/app-config.production.yaml:ro
+      - ./app-config.yaml:/app/app-config.yaml:ro
+    networks:
+      - backstage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7007/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  backstage:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
