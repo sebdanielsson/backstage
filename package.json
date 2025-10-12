@@ -38,7 +38,8 @@
   },
   "resolutions": {
     "@types/react": "^18",
-    "@types/react-dom": "^18"
+    "@types/react-dom": "^18",
+    "@swc/core": "1.13.5"
   },
   "prettier": "@backstage/cli/config/prettier",
   "lint-staged": {
