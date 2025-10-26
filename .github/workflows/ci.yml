@@ -75,7 +75,7 @@ jobs:
           serverhostname: ${{ secrets.DTRACK_SERVER_URL }}
           apiKey: ${{ secrets.DTRACK_API_KEY }}
           project: 4e2e2f38-21ff-4fe9-b6ae-12b5835ae41f
-          bomFilename: 'sbom.json'
+          output-file: './sbom.json'
 
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
