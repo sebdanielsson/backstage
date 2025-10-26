@@ -60,8 +60,6 @@ jobs:
           format: 'cyclonedx-json'
           output-file: 'sbom.json'
 
-      - run: cat sbom.json
-
       - name: Upload SBOM to Dependency-Track
         uses: DependencyTrack/gh-upload-sbom@v3
         with:
