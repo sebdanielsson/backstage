@@ -65,7 +65,7 @@ jobs:
       - name: Upload SBOM to Dependency-Track
         uses: DependencyTrack/gh-upload-sbom@v3
         with:
-          serverhostname: ${{ secrets.DTRACK_SERVER_URL }}
+          serverHostname: ${{ secrets.DTRACK_SERVER_URL }}
           apiKey: ${{ secrets.DTRACK_API_KEY }}
           project: 4e2e2f38-21ff-4fe9-b6ae-12b5835ae41f
           bomFilename: 'sbom.json'
