@@ -57,8 +57,8 @@ jobs:
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          format: 'cyclonedx-json'
-          output-file: 'sbom.json'
+          format: cyclonedx
+          output-file: sbom.xml
 
       - name: Upload SBOM to Dependency-Track
         uses: DependencyTrack/gh-upload-sbom@v3
@@ -66,7 +66,7 @@ jobs:
           serverHostname: ${{ secrets.DTRACK_SERVER_URL }}
           apiKey: ${{ secrets.DTRACK_API_KEY }}
           project: 4e2e2f38-21ff-4fe9-b6ae-12b5835ae41f
-          bomFilename: 'sbom.json'
+          bomFilename: sbom.xml
 
       - name: Run lint
         run: yarn lint:all
