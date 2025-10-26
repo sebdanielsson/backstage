@@ -63,6 +63,20 @@ jobs:
       - name: Run tests
         run: yarn test:all
 
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          format: 'spdx-json'
+          artifact-name: 'sbom.json'
+
+      - name: Upload SBOM to Dependency-Track
+        uses: DependencyTrack/gh-upload-sbom@v3
+        with:
+          serverhostname: ${{ secrets.DTRACK_SERVER_URL }}
+          apiKey: ${{ secrets.DTRACK_API_KEY }}
+          project: 4e2e2f38-21ff-4fe9-b6ae-12b5835ae41f
+          bomFilename: 'sbom.json'
+
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
