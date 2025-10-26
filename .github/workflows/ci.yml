@@ -54,20 +54,13 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      - name: Run lint
-        run: yarn lint:all
-
-      - name: Run type check
-        run: yarn tsc:full
-
-      - name: Run tests
-        run: yarn test:all
-
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
           format: 'cyclonedx-json'
-          output-file: './sbom.json'
+          output-file: 'sbom.json'
+
+      - run: ls -la .
 
       - name: Upload SBOM to Dependency-Track
         uses: DependencyTrack/gh-upload-sbom@v3
@@ -76,6 +69,15 @@ jobs:
           apiKey: ${{ secrets.DTRACK_API_KEY }}
           project: 4e2e2f38-21ff-4fe9-b6ae-12b5835ae41f
           bomFilename: 'sbom.json'
+
+      - name: Run lint
+        run: yarn lint:all
+
+      - name: Run type check
+        run: yarn tsc:full
+
+      - name: Run tests
+        run: yarn test:all
 
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
