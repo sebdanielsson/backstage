@@ -20,6 +20,8 @@ import {
   CssExtractRspackPlugin,
   WebpackPluginInstance,
 } from '@rspack/core';
+import fs from 'fs-extra';
+import { resolve as resolvePath } from 'node:path';
 import { STATIC_ASSET_HASH_LENGTH } from './staticAssetHash';
 
 type Transforms = {
@@ -31,10 +33,27 @@ type TransformOptions = {
   isDev: boolean;
   isBackend?: boolean;
   webpack?: typeof import('webpack').webpack;
+  // Absolute path to the target package, used to detect an optional PostCSS setup
+  targetPath?: string;
 };
 
+const POSTCSS_CONFIG_FILES = [
+  'postcss.config.js',
+  'postcss.config.cjs',
+  'postcss.config.mjs',
+];
+
 export const transforms = (options: TransformOptions): Transforms => {
-  const { isDev, isBackend, webpack } = options;
+  const { isDev, isBackend, webpack, targetPath } = options;
+
+  // Opt-in PostCSS support, enabled by placing a postcss.config.{js,cjs,mjs}
+  // in the target package root. This is what e.g. Tailwind CSS needs in order
+  // to hook into the bundling of the app.
+  const postcssConfigPath = targetPath
+    ? POSTCSS_CONFIG_FILES.map(name => resolvePath(targetPath, name)).find(
+        path => fs.pathExistsSync(path),
+      )
+    : undefined;
 
   const CssExtractPlugin: typeof CssExtractRspackPlugin = webpack
     ? (require('mini-css-extract-plugin') as unknown as typeof CssExtractRspackPlugin)
@@ -175,8 +194,22 @@ export const transforms = (options: TransformOptions): Transforms => {
           loader: require.resolve('css-loader'),
           options: {
             sourceMap: true,
+            ...(postcssConfigPath && { importLoaders: 1 }),
           },
         },
+        ...(postcssConfigPath
+          ? [
+              {
+                loader: require.resolve('postcss-loader'),
+                options: {
+                  sourceMap: true,
+                  postcssOptions: {
+                    config: postcssConfigPath,
+                  },
+                },
+              },
+            ]
+          : []),
       ],
     },
   ];

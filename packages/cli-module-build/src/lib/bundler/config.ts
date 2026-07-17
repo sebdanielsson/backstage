@@ -123,7 +123,10 @@ export async function createConfig(
     webpack,
   } = options;
 
-  const { plugins, loaders } = transforms(options);
+  const { plugins, loaders } = transforms({
+    ...options,
+    targetPath: paths.targetPath,
+  });
   // Any package that is part of the monorepo but outside the monorepo root dir need
   // separate resolution logic.
 
@@ -339,6 +342,11 @@ export async function createConfig(
     resolve: {
       extensions: ['.ts', '.tsx', '.mjs', '.js', '.jsx', '.json', '.wasm'],
       mainFields: ['browser', 'module', 'main'],
+      alias: {
+        // Allow the common `@/` import convention to resolve to the target
+        // package src directory, matching the `@/*` tsconfig path alias.
+        '@': paths.targetSrc,
+      },
       fallback: {
         ...pickBy(require('node-stdlib-browser')),
         module: false,

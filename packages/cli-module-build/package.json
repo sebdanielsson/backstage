@@ -80,6 +80,7 @@
     "portfinder": "^1.0.32",
     "postcss": "^8.1.0",
     "postcss-import": "^16.1.0",
+    "postcss-loader": "^8.2.0",
     "process": "^0.11.10",
     "raw-loader": "^4.0.2",
     "react-dev-utils": "^12.0.0-next.60",
