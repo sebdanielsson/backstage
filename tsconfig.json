@@ -13,6 +13,9 @@
     "outDir": "dist-types",
     "rootDir": ".",
     "useUnknownInCatchVariables": false,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./packages/app-shadcn/src/*"]
+    }
   }
 }

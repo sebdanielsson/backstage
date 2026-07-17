@@ -1,0 +1,76 @@
+{
+  "name": "example-app-shadcn",
+  "version": "0.0.1",
+  "backstage": {
+    "role": "frontend"
+  },
+  "private": true,
+  "homepage": "https://backstage.io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/backstage/backstage",
+    "directory": "packages/app-shadcn"
+  },
+  "license": "Apache-2.0",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "backstage-cli package build",
+    "clean": "backstage-cli package clean",
+    "lint": "backstage-cli package lint",
+    "start": "backstage-cli package start --config app-config.yaml",
+    "test": "backstage-cli package test"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "jest": {
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
+  },
+  "dependencies": {
+    "@backstage/catalog-model": "workspace:^",
+    "@backstage/cli": "workspace:^",
+    "@backstage/core-components": "workspace:^",
+    "@backstage/core-plugin-api": "workspace:^",
+    "@backstage/frontend-defaults": "workspace:^",
+    "@backstage/frontend-plugin-api": "workspace:^",
+    "@backstage/plugin-app": "workspace:^",
+    "@backstage/plugin-app-react": "workspace:^",
+    "@backstage/plugin-catalog": "workspace:^",
+    "@backstage/plugin-catalog-react": "workspace:^",
+    "@backstage/plugin-user-settings": "workspace:^",
+    "@backstage/theme": "workspace:^",
+    "@backstage/ui": "workspace:^",
+    "@fontsource-variable/geist": "^5.2.9",
+    "@remixicon/react": "^4.9.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.525.0",
+    "react": "^18.0.2",
+    "react-aria-components": "^1.13.0",
+    "react-dom": "^18.0.2",
+    "react-router-dom": "^6.30.2",
+    "shadcn": "^4.13.1",
+    "tailwind-merge": "^3.3.1",
+    "tw-animate-css": "^1.3.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.11",
+    "@types/react": "*",
+    "@types/react-dom": "*",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.11"
+  }
+}

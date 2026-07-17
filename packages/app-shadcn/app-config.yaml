@@ -1,0 +1,22 @@
+# Standalone config for example-app-shadcn.
+#
+# The root app-config.yaml binds routes to plugins (techdocs, org) that are
+# not installed in this minimal app, so this app loads its own config instead
+# (see the start script in package.json).
+app:
+  title: Backstage shadcn Example App
+  baseUrl: http://localhost:3000
+
+organization:
+  name: Backstage x shadcn
+
+backend:
+  baseUrl: http://localhost:7007
+
+auth:
+  environment: development
+  providers:
+    guest: {}
+
+techdocs:
+  storageUrl: http://localhost:7007/api/techdocs/static/docs
