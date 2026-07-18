@@ -3,11 +3,13 @@ import { coreExtensionData } from '@backstage/frontend-plugin-api';
 import { UnifiedThemeProvider } from '@backstage/theme';
 import appPlugin from '@backstage/plugin-app';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
+import searchPlugin from '@backstage/plugin-search/alpha';
 import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import { shadcnPlugin } from './plugin/shadcnPlugin';
 import { shadcnNavModule } from './nav/ShadcnSidebar';
 import { ModeSync, shadcnDarkTheme, shadcnLightTheme } from './themes';
 import { ShadcnCatalogPage } from './catalog/ShadcnCatalogPage';
+import { ShadcnSearchPage } from './search/ShadcnSearchPage';
 
 /**
  * The default app layout wraps everything in the MUI-based SidebarPage, which
@@ -85,10 +87,23 @@ const customizedCatalogPlugin = catalogPlugin.withOverrides({
   ],
 });
 
+/** Replaces the search page with a native shadcn implementation. */
+const customizedSearchPlugin = searchPlugin.withOverrides({
+  extensions: [
+    searchPlugin.getExtension('page:search').override({
+      *factory(originalFactory) {
+        yield* originalFactory();
+        yield coreExtensionData.reactElement(<ShadcnSearchPage />);
+      },
+    }),
+  ],
+});
+
 const app = createApp({
   features: [
     customizedAppPlugin,
     customizedCatalogPlugin,
+    customizedSearchPlugin,
     userSettingsPlugin,
     shadcnPlugin,
     shadcnNavModule,

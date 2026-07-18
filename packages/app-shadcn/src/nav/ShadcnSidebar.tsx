@@ -77,6 +77,7 @@ function ShadcnSidebar({ navItems }: { navItems: NavContentNavItems }) {
         </span>
         {nav.take('page:shadcn')}
         {nav.take('page:catalog')}
+        {nav.take('page:search')}
         {nav.rest({ sortBy: 'title' })}
       </nav>
       <div className="border-sidebar-border flex items-center justify-between gap-2 border-t px-2 py-2">
