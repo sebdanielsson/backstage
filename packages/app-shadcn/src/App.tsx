@@ -7,6 +7,7 @@ import userSettingsPlugin from '@backstage/plugin-user-settings/alpha';
 import { shadcnPlugin } from './plugin/shadcnPlugin';
 import { shadcnNavModule } from './nav/ShadcnSidebar';
 import { ModeSync, shadcnDarkTheme, shadcnLightTheme } from './themes';
+import { ShadcnCatalogPage } from './catalog/ShadcnCatalogPage';
 
 /**
  * The default app layout wraps everything in the MUI-based SidebarPage, which
@@ -66,10 +67,28 @@ const customizedAppPlugin = appPlugin.withOverrides({
   ],
 });
 
+/**
+ * Replaces the catalog index page with a native shadcn implementation. The
+ * override preserves the original route path, route ref, title and icon (via
+ * `yield*`) and only swaps the rendered element — so catalog routing and the
+ * entity pages keep working, but the list view is rebuilt from shadcn
+ * components on top of catalog-react's `EntityListProvider`.
+ */
+const customizedCatalogPlugin = catalogPlugin.withOverrides({
+  extensions: [
+    catalogPlugin.getExtension('page:catalog').override({
+      *factory(originalFactory) {
+        yield* originalFactory();
+        yield coreExtensionData.reactElement(<ShadcnCatalogPage />);
+      },
+    }),
+  ],
+});
+
 const app = createApp({
   features: [
     customizedAppPlugin,
-    catalogPlugin,
+    customizedCatalogPlugin,
     userSettingsPlugin,
     shadcnPlugin,
     shadcnNavModule,

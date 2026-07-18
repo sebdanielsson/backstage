@@ -4,6 +4,10 @@ module.exports = require('@backstage/cli/config/eslint-factory')(__dirname, {
     // The shadcn-generated UI components are vendored code without the
     // repository license headers.
     'notice/notice': 'off',
+    // This app is built on shadcn/Tailwind primitives and deliberately uses
+    // native HTML elements instead of the Material UI components this rule
+    // steers towards.
+    'react/forbid-elements': 'off',
   },
   overrides: [
     {
