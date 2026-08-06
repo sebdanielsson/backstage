@@ -231,11 +231,13 @@ jobs:
       - name: Install MkDocs dependencies
         run: pip install mkdocs mkdocs-techdocs-core
 
+        # Only the microsite is installed here. Nothing in this job reads the
+        # workspace root's node_modules: the microsite builds from its own
+        # dependencies, and `yarn dedupe --check` works straight off the
+        # lockfiles.
+        #
         # Skip caching of microsite dependencies, it keeps the global cache size
         # smaller, which make Windows builds a lot faster for the rest of the project.
-      - name: top-level install
-        run: yarn install --immutable
-
       - name: yarn install
         run: yarn install --immutable
         working-directory: microsite

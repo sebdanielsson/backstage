@@ -22,7 +22,7 @@
     "write-heading-ids": "docusaurus write-heading-ids",
     "write-translations": "docusaurus write-translations"
   },
-  "prettier": "@backstage/cli/config/prettier",
+  "prettier": "../packages/cli/config/prettier.json",
   "resolutions": {
     "@swc/core": "1.15.24",
     "@swc/html": "1.15.24",
