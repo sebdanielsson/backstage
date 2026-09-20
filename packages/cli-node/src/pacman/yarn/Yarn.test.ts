@@ -209,6 +209,13 @@ describe('Yarn', () => {
       ['yarn', 'pack', '--out', '/out/pkg.tgz'],
       { cwd: '/pkg' },
     );
+
+    const onStdout = () => {};
+    await berry.pack('/out/pkg.tgz', '/pkg', { cwd: '/ignored', onStdout });
+    expect(mockRun).toHaveBeenLastCalledWith(
+      ['yarn', 'pack', '--out', '/out/pkg.tgz'],
+      { cwd: '/pkg', onStdout },
+    );
   });
 
   it('should fetch package info with yarn classic', async () => {

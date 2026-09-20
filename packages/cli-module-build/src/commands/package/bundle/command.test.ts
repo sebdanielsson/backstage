@@ -36,6 +36,8 @@ const mockPackToDirectory = jest.fn();
 const mockBuildFrontend = jest.fn();
 const mockRun = jest.fn();
 const mockRunOutput = jest.fn();
+const mockDetectPackageManager = jest.fn();
+const mockInstall = jest.fn();
 const mockListTargetPackages = jest.fn();
 const mockLoadConfigSchema = jest.fn();
 const mockCreateRequire = jest.fn();
@@ -71,6 +73,8 @@ jest.mock('@backstage/cli-node', () => {
       listTargetPackages: (...args: unknown[]) =>
         mockListTargetPackages(...args),
     }),
+    detectPackageManager: (...args: unknown[]) =>
+      mockDetectPackageManager(...args),
   };
 });
 
@@ -391,17 +395,24 @@ describe('bundle command', () => {
   function setupRunMock() {
     mockRun.mockImplementation(
       (
-        args: string[],
+        _args: string[],
         opts: { cwd: string; onStdout?: (d: Buffer) => void },
       ) => ({
         waitForExit: async () => {
-          if (!args.includes('update-lockfile')) {
-            await fs.ensureDir(joinPath(opts.cwd, 'node_modules'));
-            await fs.ensureDir(joinPath(opts.cwd, '.yarn'));
-          }
           opts.onStdout?.(Buffer.from('mock yarn output\n'));
         },
       }),
+    );
+    mockDetectPackageManager.mockResolvedValue({
+      name: () => 'yarn',
+      install: mockInstall,
+    });
+    mockInstall.mockImplementation(
+      async (opts: { cwd: string; onStdout?: (d: Buffer) => void }) => {
+        await fs.ensureDir(joinPath(opts.cwd, 'node_modules'));
+        await fs.ensureDir(joinPath(opts.cwd, '.yarn'));
+        opts.onStdout?.(Buffer.from('mock yarn output\n'));
+      },
     );
   }
 
@@ -440,6 +451,16 @@ describe('bundle command', () => {
   }
 
   describe('validation', () => {
+    it('throws when the project does not use Yarn', async () => {
+      mockDetectPackageManager.mockResolvedValue({ name: () => 'pnpm' });
+      setupPlugin(backendPluginDir, backendPkg);
+      await expect(bundleCommand(defaultOpts)).rejects.toThrow(
+        'The package bundle command currently only supports Yarn projects',
+      );
+      expect(mockRun).not.toHaveBeenCalled();
+      expect(mockInstall).not.toHaveBeenCalled();
+    });
+
     it('throws when backstage.role is missing', async () => {
       setupPlugin(backendPluginDir, {
         name: '@scope/plugin-foo-backend',
@@ -728,9 +749,8 @@ describe('bundle command', () => {
           ]),
           expect.objectContaining({ cwd: ctx.targetDir }),
         );
-        expect(mockRun).toHaveBeenCalledWith(
-          expect.arrayContaining(['yarn', 'install', '--immutable']),
-          expect.objectContaining({ cwd: ctx.targetDir }),
+        expect(mockInstall).toHaveBeenCalledWith(
+          expect.objectContaining({ immutable: true, cwd: ctx.targetDir }),
         );
       });
 
@@ -766,10 +786,7 @@ describe('bundle command', () => {
           expect.arrayContaining(['--mode', 'update-lockfile']),
           expect.objectContaining({ cwd: ctx.targetDir }),
         );
-        expect(mockRun).not.toHaveBeenCalledWith(
-          expect.arrayContaining(['--immutable']),
-          expect.objectContaining({ cwd: ctx.targetDir }),
-        );
+        expect(mockInstall).not.toHaveBeenCalled();
         expect(console.log).toHaveBeenCalledWith(
           expect.stringContaining('Skipping dependency installation'),
         );
@@ -830,9 +847,8 @@ describe('bundle command', () => {
       it('should pipe run output to console when verbose=true', async () => {
         await bundleCommand({ ...defaultOpts, verbose: true });
 
-        expect(mockRun).toHaveBeenCalledWith(
-          expect.arrayContaining(['yarn', 'install', '--immutable']),
-          expect.anything(),
+        expect(mockInstall).toHaveBeenCalledWith(
+          expect.objectContaining({ immutable: true, cwd: ctx.targetDir }),
         );
         expect(console.log).toHaveBeenCalledWith(
           expect.stringContaining('mock yarn output'),
@@ -878,20 +894,19 @@ describe('bundle command', () => {
     describe('error handling', () => {
       it('should propagate error and show log when pruneBundleLockfile fails', async () => {
         setupCreateDistWorkspaceMock(ctx.pluginDir);
-        mockRun
-          .mockReturnValueOnce({ waitForExit: () => Promise.resolve() })
-          .mockImplementationOnce((_args: any, opts: any) => ({
-            waitForExit: async () => {
-              (opts?.onStdout ?? opts?.onStderr)?.(
-                Buffer.from('yarn prune output line 1\nline 2\n'),
-              );
-              throw new Error('prune failed');
-            },
-          }));
+        mockRun.mockImplementationOnce((_args: any, opts: any) => ({
+          waitForExit: async () => {
+            (opts?.onStdout ?? opts?.onStderr)?.(
+              Buffer.from('yarn prune output line 1\nline 2\n'),
+            );
+            throw new Error('prune failed');
+          },
+        }));
 
         await expect(bundleCommand(defaultOpts)).rejects.toThrow(
           'prune failed',
         );
+        expect(mockInstall).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalledWith(
           expect.stringContaining('Full log available at'),
         );
@@ -900,18 +915,21 @@ describe('bundle command', () => {
         );
       });
 
-      it('should propagate error when installBundleDependencies fails', async () => {
+      it('should propagate error and show log when installBundleDependencies fails', async () => {
         setupCreateDistWorkspaceMock(ctx.pluginDir);
-        let callCount = 0;
-        mockRun.mockImplementation(() => ({
-          waitForExit: () =>
-            ++callCount === 2
-              ? Promise.reject(new Error('install failed'))
-              : Promise.resolve(),
-        }));
+        mockInstall.mockImplementation(async (opts: any) => {
+          opts.onStdout?.(Buffer.from('yarn install output line 1\n'));
+          throw new Error('install failed');
+        });
 
         await expect(bundleCommand(defaultOpts)).rejects.toThrow(
           'install failed',
+        );
+        expect(mockInstall).toHaveBeenCalledWith(
+          expect.objectContaining({ immutable: true, cwd: ctx.targetDir }),
+        );
+        expect(console.error).toHaveBeenCalledWith(
+          expect.stringContaining('Full log available at'),
         );
       });
     });
@@ -1097,10 +1115,7 @@ describe('bundle command', () => {
           expect.arrayContaining(['--mode', 'update-lockfile']),
           expect.objectContaining({ cwd: ctx.targetDir }),
         );
-        expect(mockRun).not.toHaveBeenCalledWith(
-          expect.arrayContaining(['--immutable']),
-          expect.objectContaining({ cwd: ctx.targetDir }),
-        );
+        expect(mockInstall).not.toHaveBeenCalled();
       });
     });
 

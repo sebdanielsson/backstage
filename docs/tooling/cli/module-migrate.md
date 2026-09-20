@@ -31,7 +31,8 @@ have a `backstage.moved` field in their `package.json`, updates the dependency
 names in `package.json` files, and optionally rewrites import paths in source
 files.
 
-After making changes the command runs `yarn install` to update the lockfile.
+After making changes the command runs the install command of the detected
+package manager, `yarn install` or `pnpm install`, to update the lockfile.
 
 ```text
 Usage: backstage-cli versions:migrate [options]

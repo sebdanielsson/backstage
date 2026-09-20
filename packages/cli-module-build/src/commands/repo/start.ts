@@ -16,6 +16,7 @@
 
 import {
   BackstagePackage,
+  detectPackageManager,
   PackageGraph,
   PackageRole,
 } from '@backstage/cli-node';
@@ -125,8 +126,11 @@ export async function findTargetPackages(
       );
     });
     if (matchingPackages.length === 0) {
+      const pm = await detectPackageManager();
       throw new Error(
-        `Unable to find any plugin packages with plugin ID '${pluginId}'. Make sure backstage.pluginId is set in your package.json files by running 'yarn fix --publish'.`,
+        `Unable to find any plugin packages with plugin ID '${pluginId}'. Make sure backstage.pluginId is set in your package.json files by running '${pm.getCommandHint(
+          ['fix', '--publish'],
+        )}'.`,
       );
     }
     targetPackages.push(...matchingPackages);
@@ -174,10 +178,17 @@ export async function findTargetPackages(
         continue;
       }
 
+      const pm = await detectPackageManager();
       throw new Error(
         `Found multiple packages with role '${role}' but none of the use the default path '${expectedPath}',` +
           `choose which packages you want to run by passing the package names explicitly ` +
-          `as arguments, for example 'yarn backstage-cli repo start my-app my-backend'.`,
+          `as arguments, for example '${pm.getCommandHint([
+            'backstage-cli',
+            'repo',
+            'start',
+            'my-app',
+            'my-backend',
+          ])}'.`,
       );
     }
 
@@ -193,10 +204,17 @@ export async function findTargetPackages(
       pkg => pkg.packageJson.backstage?.role === role,
     );
     if (matchingPackages.length > 1) {
+      const pm = await detectPackageManager();
       throw new Error(
         `Found multiple packages with role '${role}', please choose which packages you want ` +
           `to run by passing the package names explicitly as arguments, for example ` +
-          `'yarn backstage-cli repo start my-plugin my-plugin-backend'.`,
+          `'${pm.getCommandHint([
+            'backstage-cli',
+            'repo',
+            'start',
+            'my-plugin',
+            'my-plugin-backend',
+          ])}'.`,
       );
     }
     targetPackages.push(...matchingPackages);
