@@ -15,3 +15,4 @@
  */
 
 export { Yarn } from './Yarn';
+export { YarnLockfile, type LockfileQueryEntry } from './YarnLockfile';

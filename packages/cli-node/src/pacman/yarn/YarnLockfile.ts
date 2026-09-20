@@ -18,6 +18,7 @@ import { parseSyml, stringifySyml } from '@yarnpkg/parsers';
 import { stringify as legacyStringifyLockfile } from '@yarnpkg/lockfile';
 import crypto from 'node:crypto';
 import fs from 'fs-extra';
+import { Lockfile, LockfileDiff, LockfileEntry } from '../Lockfile';
 
 const ENTRY_PATTERN = /^((?:@[^/]+\/)?[^@/]+)@(.+)$/;
 
@@ -43,35 +44,17 @@ type LockfileData = {
 };
 
 /**
- * A single entry in a {@link Lockfile}.
+ * A single entry in a {@link YarnLockfile}.
+ *
+ * @remarks
+ *
+ * In addition to the fields of {@link LockfileEntry}, each entry keeps the
+ * key of the raw `yarn.lock` data that it was parsed from.
  *
  * @public
  */
-export type LockfileQueryEntry = {
-  range: string;
-  version: string;
+export type LockfileQueryEntry = LockfileEntry & {
   dataKey: string;
-};
-
-/**
- * An entry for a single difference between two {@link Lockfile}s.
- *
- * @public
- */
-export type LockfileDiffEntry = {
-  name: string;
-  range: string;
-};
-
-/**
- * Represents the difference between two {@link Lockfile}s.
- *
- * @public
- */
-export type LockfileDiff = {
-  added: LockfileDiffEntry[];
-  changed: LockfileDiffEntry[];
-  removed: LockfileDiffEntry[];
 };
 
 // these are special top level yarn keys.
@@ -88,25 +71,24 @@ const SPECIAL_OBJECT_KEYS = [
 ];
 
 /**
- * Represents a package manager lockfile.
+ * Represents a Yarn `yarn.lock` lockfile, in either the classic or the
+ * modern format.
  *
  * @public
  */
-export class Lockfile {
+export class YarnLockfile implements Lockfile {
   /**
-   * Load a {@link Lockfile} from a file path.
+   * Load a {@link YarnLockfile} from a file path.
    */
-  static async load(path: string): Promise<Lockfile> {
+  static async load(path: string): Promise<YarnLockfile> {
     const lockfileContents = await fs.readFile(path, 'utf8');
-    return Lockfile.parse(lockfileContents);
+    return YarnLockfile.parse(lockfileContents);
   }
 
   /**
-   * Parse lockfile contents into a {@link Lockfile}.
-   *
-   * @public
+   * Parse lockfile contents into a {@link YarnLockfile}.
    */
-  static parse(content: string): Lockfile {
+  static parse(content: string): YarnLockfile {
     const legacy = LEGACY_REGEX.test(content);
 
     let data: LockfileData;
@@ -142,7 +124,7 @@ export class Lockfile {
       }
     }
 
-    return new Lockfile(packages, data, legacy);
+    return new YarnLockfile(packages, data, legacy);
   }
 
   private readonly packages: Map<string, LockfileQueryEntry[]>;
@@ -159,12 +141,12 @@ export class Lockfile {
     this.legacy = legacy;
   }
 
-  /** Returns the name of all packages available in the lockfile */
+  /** Get the entries for a single package in the lockfile */
   get(name: string): LockfileQueryEntry[] | undefined {
     return this.packages.get(name);
   }
 
-  /** Get the entries for a single package in the lockfile */
+  /** Returns the names of all packages available in the lockfile */
   keys(): IterableIterator<string> {
     return this.packages.keys();
   }
@@ -205,8 +187,20 @@ export class Lockfile {
   /**
    * Diff with another lockfile, returning entries that have been
    * added, changed, and removed compared to the other lockfile.
+   *
+   * @remarks
+   *
+   * The other lockfile must also be a {@link YarnLockfile}, since the diff
+   * compares the raw `yarn.lock` data of both lockfiles. An error is thrown
+   * for any other lockfile implementation.
    */
   diff(otherLockfile: Lockfile): LockfileDiff {
+    if (!(otherLockfile instanceof YarnLockfile)) {
+      throw new Error(
+        'A yarn lockfile can only be diffed with another yarn lockfile',
+      );
+    }
+
     const diff = {
       added: new Array<{ name: string; range: string }>(),
       changed: new Array<{ name: string; range: string }>(),
