@@ -21,23 +21,26 @@ import {
   resetDetectedPackageManagers,
 } from './PackageManager';
 import { Yarn } from './yarn';
+import { Pnpm } from './pnpm';
 import { withLogCollector } from '@backstage/test-utils';
 
 const mockDir = createMockDirectory();
 overrideTargetPaths(mockDir.path);
 
 const mockYarnCreate = jest.spyOn(Yarn, 'create');
+const mockPnpmCreate = jest.spyOn(Pnpm, 'create');
 
-const PNPM_LOG = 'Detected unsupported package manager: pnpm.';
-const FALLBACK_LOG =
-  'Yarn was not detected, but is the only supported package manager.';
+const FALLBACK_LOG = 'No package manager was detected, falling back to yarn.';
 
 describe('detectPackageManager', () => {
   let mockYarn: Yarn;
+  let mockPnpm: Pnpm;
 
   beforeEach(() => {
     mockYarn = { name: () => 'yarn' } as unknown as Yarn;
     mockYarnCreate.mockResolvedValue(mockYarn);
+    mockPnpm = { name: () => 'pnpm' } as unknown as Pnpm;
+    mockPnpmCreate.mockResolvedValue(mockPnpm);
   });
 
   afterEach(() => {
@@ -65,6 +68,8 @@ describe('detectPackageManager', () => {
       }),
     });
     await expect(detect()).resolves.toEqual({ pm: mockYarn, log: [] });
+    expect(mockYarnCreate).toHaveBeenCalledWith(mockDir.path);
+    expect(mockPnpmCreate).not.toHaveBeenCalled();
     resetDetectedPackageManagers();
 
     mockDir.setContent({
@@ -74,10 +79,8 @@ describe('detectPackageManager', () => {
         packageManager: 'pnpm@12.4.0',
       }),
     });
-    // pnpm is not supported yet, so we fall back to yarn with a warning
-    await expect(detect()).resolves.toEqual({ pm: mockYarn, log: [PNPM_LOG] });
-
-    expect(mockYarnCreate).toHaveBeenCalledTimes(2);
+    await expect(detect()).resolves.toEqual({ pm: mockPnpm, log: [] });
+    expect(mockPnpmCreate).toHaveBeenCalledWith(mockDir.path);
   });
 
   it('should detect from the lockfiles, and warn when both exist', async () => {
@@ -95,13 +98,10 @@ describe('detectPackageManager', () => {
       'package.json': JSON.stringify({ name: 'foo' }),
     });
     const { pm, log } = await detect();
-    expect(pm).toBe(mockYarn);
+    expect(pm).toBe(mockPnpm);
     expect(log).toEqual([
       expect.stringContaining('Both pnpm-lock.yaml and yarn.lock exist'),
-      PNPM_LOG,
     ]);
-
-    expect(mockYarnCreate).toHaveBeenCalledTimes(2);
   });
 
   it('should ignore an unsupported declaration when the project shows what it uses', async () => {
@@ -120,7 +120,6 @@ describe('detectPackageManager', () => {
         'declares npm, which is not supported. Detecting from the project files instead.',
       ),
     ]);
-    expect(mockYarnCreate).toHaveBeenCalledTimes(1);
   });
 
   it('should fail when an unsupported declaration is the only signal', async () => {
@@ -135,6 +134,7 @@ describe('detectPackageManager', () => {
       'The packageManager field of the project declares npm, which is not supported. Use yarn or pnpm, or remove the field',
     );
     expect(mockYarnCreate).not.toHaveBeenCalled();
+    expect(mockPnpmCreate).not.toHaveBeenCalled();
   });
 
   it('should detect via the packageManager field before workspace config', async () => {
@@ -156,10 +156,11 @@ describe('detectPackageManager', () => {
         workspaces: ['packages/*'],
       }),
     });
-    await expect(detect()).resolves.toEqual({ pm: mockYarn, log: [PNPM_LOG] });
+    await expect(detect()).resolves.toEqual({ pm: mockPnpm, log: [] });
     resetDetectedPackageManagers();
 
-    expect(mockYarnCreate).toHaveBeenCalledTimes(2);
+    expect(mockYarnCreate).toHaveBeenCalledTimes(1);
+    expect(mockPnpmCreate).toHaveBeenCalledTimes(1);
   });
 
   it('should detect pnpm via pnpm-workspace.yaml before the workspaces field', async () => {
@@ -171,8 +172,9 @@ describe('detectPackageManager', () => {
       }),
     });
 
-    await expect(detect()).resolves.toEqual({ pm: mockYarn, log: [PNPM_LOG] });
-    expect(mockYarnCreate).toHaveBeenCalledTimes(1);
+    await expect(detect()).resolves.toEqual({ pm: mockPnpm, log: [] });
+    expect(mockPnpmCreate).toHaveBeenCalledTimes(1);
+    expect(mockYarnCreate).not.toHaveBeenCalled();
   });
 
   it('should detect yarn via root package.json workspaces', async () => {
@@ -245,5 +247,19 @@ describe('detectPackageManager', () => {
     await expect(detectPackageManager()).rejects.toThrow('NOPE');
     await expect(detectPackageManager()).resolves.toBe(mockYarn);
     expect(mockYarnCreate).toHaveBeenCalledTimes(2);
+
+    resetDetectedPackageManagers();
+    mockDir.setContent({
+      'pnpm-lock.yaml': 'just needs to exist',
+    });
+
+    mockPnpmCreate.mockRejectedValueOnce(
+      new Error('pnpm 12.4 or later is required, found 10.2.0'),
+    );
+    await expect(detectPackageManager()).rejects.toThrow(
+      'pnpm 12.4 or later is required, found 10.2.0',
+    );
+    await expect(detectPackageManager()).resolves.toBe(mockPnpm);
+    expect(mockPnpmCreate).toHaveBeenCalledTimes(2);
   });
 });

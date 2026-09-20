@@ -2380,6 +2380,7 @@ __metadata:
     glob: "npm:^13.0.0"
     jest-css-modules: "npm:^2.1.0"
     sucrase: "npm:^3.20.2"
+    yaml: "npm:^2.0.0"
     yargs: "npm:^16.2.0"
   peerDependencies:
     "@jest/environment-jsdom-abstract": ^30.0.0
@@ -4907,6 +4908,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     ping: "npm:^0.4.1"
     supertest: "npm:^7.0.0"
+    yaml: "npm:^2.0.0"
   languageName: unknown
   linkType: soft
 

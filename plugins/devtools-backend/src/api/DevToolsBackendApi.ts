@@ -31,6 +31,7 @@ import ping from 'ping';
 import os from 'node:os';
 import fs from 'fs-extra';
 import { Lockfile } from '../util/Lockfile';
+import { PnpmLockfile } from '../util/PnpmLockfile';
 import { memoize } from 'lodash';
 import { toError } from '@backstage/errors';
 import { LoggerService } from '@backstage/backend-plugin-api';
@@ -226,8 +227,10 @@ export class DevToolsBackendApi {
       backstageJson = JSON.parse(buffer.toString());
     }
 
-    const lockfilePath = paths.resolveTargetRoot('yarn.lock');
-    const lockfile = await Lockfile.load(lockfilePath);
+    const pnpmLockfilePath = paths.resolveTargetRoot('pnpm-lock.yaml');
+    const lockfile = (await fs.pathExists(pnpmLockfilePath))
+      ? await PnpmLockfile.load(pnpmLockfilePath)
+      : await Lockfile.load(paths.resolveTargetRoot('yarn.lock'));
 
     const prefixes = ['@backstage', '@internal'].concat(
       this.config.getOptionalStringArray('devTools.info.packagePrefixes') ?? [],

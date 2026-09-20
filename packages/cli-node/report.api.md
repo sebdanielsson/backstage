@@ -321,6 +321,53 @@ export class PackageRoles {
 }
 
 // @public
+export class Pnpm implements PackageManager {
+  static create(dir?: string): Promise<Pnpm>;
+  fetchPackageInfo(name: string): Promise<PackageInfo>;
+  getCommandHint(args: string[]): string;
+  install(options?: PackageManagerInstallOptions): Promise<void>;
+  loadLockfile(): Promise<Lockfile>;
+  lockfileName(): string;
+  name(): string;
+  pack(output: string, packageDir: string, options?: RunOptions): Promise<void>;
+  parseLockfile(contents: string): Promise<Lockfile>;
+  run(args: string[], options?: RunOptions): Promise<void>;
+  runScript(
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  runWorkspaceScript(
+    workspace: string,
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  supportsBackstageVersionProtocol(): Promise<boolean>;
+  toString(): string;
+  version(): string;
+}
+
+// @public
+export class PnpmLockfile implements Lockfile {
+  createSimplifiedDependencyGraph(): Map<string, Set<string>>;
+  diff(otherLockfile: Lockfile): LockfileDiff;
+  get(name: string): LockfileEntry[] | undefined;
+  getDependencyTreeHash(startName: string): string;
+  keys(): IterableIterator<string>;
+  static load(path: string): Promise<PnpmLockfile>;
+  static parse(
+    content: string,
+    options?: PnpmLockfileParseOptions,
+  ): Promise<PnpmLockfile>;
+}
+
+// @public
+export type PnpmLockfileParseOptions = {
+  workspaceDir?: string;
+};
+
+// @public
 export function runCli(options: {
   modules: ReadonlyArray<CliModule>;
   name: string;
