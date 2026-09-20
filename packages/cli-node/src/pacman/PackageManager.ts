@@ -49,6 +49,13 @@ export type PackageManagerInstallOptions = {
    */
   immutable?: boolean;
 
+  /**
+   * Whether the install must not access the network. When set, packages are
+   * resolved and fetched from the package manager's local cache only, and the
+   * install fails if anything is missing from it.
+   */
+  offline?: boolean;
+
   /** The directory to run the install in. Defaults to the current working directory. */
   cwd?: string;
 

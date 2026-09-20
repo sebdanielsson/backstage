@@ -277,6 +277,7 @@ export interface PackageManager {
 // @public
 export type PackageManagerInstallOptions = {
   immutable?: boolean;
+  offline?: boolean;
   cwd?: string;
   env?: Partial<NodeJS.ProcessEnv>;
   onStdout?: RunOnOutput;

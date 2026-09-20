@@ -67,18 +67,20 @@ export class Yarn implements PackageManager {
 
   /**
    * Runs `yarn install`, with `--immutable` (or `--frozen-lockfile` for Yarn
-   * classic) when an immutable install is requested.
+   * classic) when an immutable install is requested. An offline install
+   * disables network access through `YARN_ENABLE_NETWORK=0` (or `--offline`
+   * for Yarn classic).
    */
   async install(options?: PackageManagerInstallOptions) {
-    const { immutable, cwd, env, onStdout, onStderr } = options ?? {};
+    const { immutable, offline, cwd, env, onStdout, onStderr } = options ?? {};
+    const isClassic = this.yarnVersion.codename === 'classic';
 
     const args = ['install'];
     if (immutable) {
-      args.push(
-        this.yarnVersion.codename === 'classic'
-          ? '--frozen-lockfile'
-          : '--immutable',
-      );
+      args.push(isClassic ? '--frozen-lockfile' : '--immutable');
+    }
+    if (offline && isClassic) {
+      args.push('--offline');
     }
 
     await this.run(args, {
@@ -92,12 +94,15 @@ export class Yarn implements PackageManager {
             name.startsWith('npm_') ? [name, undefined] : [name, value],
           ),
         ),
+        ...env,
+        // The settings below follow from the install options, so they take
+        // precedence over the environment given by the caller.
         // Yarn enables immutable installs by default in CI, so we explicitly
         // disable them when a mutable install has been requested.
         ...(immutable === false
           ? { YARN_ENABLE_IMMUTABLE_INSTALLS: 'false' }
           : {}),
-        ...env,
+        ...(offline && !isClassic ? { YARN_ENABLE_NETWORK: '0' } : {}),
       },
       onStdout,
       onStderr,

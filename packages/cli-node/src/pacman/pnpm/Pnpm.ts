@@ -76,16 +76,19 @@ export class Pnpm implements PackageManager {
    * Runs `pnpm install`, with `--frozen-lockfile` when an immutable install is
    * requested and `--no-frozen-lockfile` when a mutable install is requested.
    * The latter is needed because pnpm enables frozen installs by default in
-   * CI environments.
+   * CI environments. An offline install adds `--offline`.
    */
   async install(options?: PackageManagerInstallOptions) {
-    const { immutable, cwd, env, onStdout, onStderr } = options ?? {};
+    const { immutable, offline, cwd, env, onStdout, onStderr } = options ?? {};
 
     const args = ['install'];
     if (immutable === true) {
       args.push('--frozen-lockfile');
     } else if (immutable === false) {
       args.push('--no-frozen-lockfile');
+    }
+    if (offline) {
+      args.push('--offline');
     }
 
     await this.run(args, { cwd, env, onStdout, onStderr });
