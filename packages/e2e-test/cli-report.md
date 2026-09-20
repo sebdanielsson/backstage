@@ -23,5 +23,6 @@ Usage: e2e-test run [options]
 
 Options:
   --keep
+  --package-manager <name>
   -h, --help
 ```
