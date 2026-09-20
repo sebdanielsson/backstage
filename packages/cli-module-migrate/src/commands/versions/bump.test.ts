@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 import fs from 'fs-extra';
-import * as runObj from '@backstage/cli-common';
 import { overrideTargetPaths } from '@backstage/cli-common/testUtils';
+import {
+  detectPackageManager,
+  PackageManager,
+  YarnLockfile,
+} from '@backstage/cli-node';
 import bump, { bumpBackstageJsonVersion, createVersionFinder } from './bump';
 import { registerMswTestHooks, withLogCollector } from '@backstage/test-utils';
 import { YarnInfoInspectData } from '../../lib/versioning/packages';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { NotFoundError } from '@backstage/errors';
-import { createMockDirectory } from '@backstage/backend-test-utils';
+import {
+  createMockDirectory,
+  MockDirectory,
+} from '@backstage/backend-test-utils';
 
 // Remove log coloring to simplify log matching
 jest.mock('chalk', () => ({
@@ -47,16 +54,27 @@ jest.mock('ora', () => ({
   },
 }));
 
-jest.mock('@backstage/cli-common', () => {
-  const actual = jest.requireActual('@backstage/cli-common');
-  return {
-    ...actual,
-    run: jest.fn().mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    }),
-  };
-});
+jest.mock('@backstage/cli-node', () => ({
+  ...jest.requireActual('@backstage/cli-node'),
+  detectPackageManager: jest.fn(),
+}));
+
+const mockInstall = jest.fn();
+const mockPmRun = jest.fn();
+
+// A fake Yarn package manager that reads the lockfile and plugin
+// configuration from the mock directory, but never runs any commands
+function mockYarnPackageManager(mockDir: MockDirectory) {
+  jest.mocked(detectPackageManager).mockResolvedValue({
+    name: () => 'yarn',
+    loadLockfile: () => YarnLockfile.load(mockDir.resolve('yarn.lock')),
+    supportsBackstageVersionProtocol: () =>
+      fs.pathExists(mockDir.resolve('.yarnrc.yml')),
+    install: mockInstall,
+    run: mockPmRun,
+    getCommandHint: (args: string[]) => ['yarn', ...args].join(' '),
+  } as unknown as PackageManager);
+}
 
 const mockFetchPackageInfo = jest.fn();
 jest.mock('../../lib/versioning/packages', () => {
@@ -123,6 +141,7 @@ describe('bump', () => {
 
   beforeEach(() => {
     overrideTargetPaths(mockDir.path);
+    mockYarnPackageManager(mockDir);
     mockFetchPackageInfo.mockImplementation(async name => ({
       name: name,
       'dist-tags': {
@@ -165,10 +184,6 @@ describe('bump', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://versions.backstage.io/v1/tags/main/manifest.json', () =>
         HttpResponse.json({ packages: [] }),
@@ -197,11 +212,8 @@ describe('bump', () => {
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/core');
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/theme');
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockPmRun).not.toHaveBeenCalled();
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -251,10 +263,6 @@ describe('bump', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://versions.backstage.io/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -285,10 +293,7 @@ describe('bump', () => {
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/core');
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/theme');
 
-    expect(runObj.run).not.toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockInstall).not.toHaveBeenCalled();
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -338,10 +343,6 @@ describe('bump', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://versions.backstage.io/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -382,11 +383,8 @@ describe('bump', () => {
     expect(mockFetchPackageInfo).toHaveBeenCalledTimes(1);
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/core');
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockPmRun).not.toHaveBeenCalled();
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -437,10 +435,6 @@ describe('bump', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://versions.backstage.io/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -483,17 +477,13 @@ describe('bump', () => {
     expect(mockFetchPackageInfo).toHaveBeenCalledTimes(1);
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/core');
 
-    expect(runObj.run).toHaveBeenCalledTimes(2);
-    expect(runObj.run).toHaveBeenCalledWith([
-      'yarn',
+    expect(mockPmRun).toHaveBeenCalledTimes(1);
+    expect(mockPmRun).toHaveBeenCalledWith([
       'plugin',
       'import',
       'https://versions.backstage.io/v1/releases/0.0.1/yarn-plugin',
     ]);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -543,10 +533,6 @@ describe('bump', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get(
         'https://versions.backstage.io/v1/releases/999.0.1/manifest.json',
@@ -562,7 +548,8 @@ describe('bump', () => {
       'Using default pattern glob @backstage/*',
     ]);
 
-    expect(runObj.run).toHaveBeenCalledTimes(0);
+    expect(mockInstall).not.toHaveBeenCalled();
+    expect(mockPmRun).not.toHaveBeenCalled();
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -613,10 +600,6 @@ describe('bump', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://versions.backstage.io/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -711,10 +694,6 @@ describe('bump', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://versions.backstage.io/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -762,11 +741,8 @@ describe('bump', () => {
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/core');
     expect(mockFetchPackageInfo).toHaveBeenCalledWith('@backstage/theme');
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockPmRun).not.toHaveBeenCalled();
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -821,10 +797,6 @@ describe('bump', () => {
     });
 
     mockFetchPackageInfo.mockRejectedValue(new NotFoundError('Nope'));
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://versions.backstage.io/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -844,7 +816,8 @@ describe('bump', () => {
       'All Backstage packages are up to date!',
     ]);
 
-    expect(runObj.run).toHaveBeenCalledTimes(0);
+    expect(mockInstall).not.toHaveBeenCalled();
+    expect(mockPmRun).not.toHaveBeenCalled();
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -1014,6 +987,7 @@ describe('environment variables', () => {
 
   beforeEach(() => {
     overrideTargetPaths(mockDir.path);
+    mockYarnPackageManager(mockDir);
   });
 
   beforeEach(() => {
@@ -1048,10 +1022,6 @@ describe('environment variables', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://custom.example.com/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -1081,11 +1051,8 @@ describe('environment variables', () => {
       'Version bump complete!',
     ]);
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockPmRun).not.toHaveBeenCalled();
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -1135,11 +1102,6 @@ describe('environment variables', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
-
     const { log: logs } = await withLogCollector(['log', 'warn'], async () => {
       await bump({ args: ['--release', 'main'], info });
     });
@@ -1165,11 +1127,8 @@ describe('environment variables', () => {
     // Should not make any HTTP requests since using local manifest
     expect(mockFetchPackageInfo).not.toHaveBeenCalled();
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockPmRun).not.toHaveBeenCalled();
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -1202,10 +1161,6 @@ describe('environment variables', () => {
       },
     });
 
-    jest.spyOn(runObj, 'run').mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    } as any);
     worker.use(
       http.get('https://custom.example.com/v1/tags/main/manifest.json', () =>
         HttpResponse.json({
@@ -1237,17 +1192,13 @@ describe('environment variables', () => {
       'Version bump complete!',
     ]);
 
-    expect(runObj.run).toHaveBeenCalledTimes(2);
-    expect(runObj.run).toHaveBeenCalledWith([
-      'yarn',
+    expect(mockPmRun).toHaveBeenCalledTimes(1);
+    expect(mockPmRun).toHaveBeenCalledWith([
       'plugin',
       'import',
       'https://custom.example.com/v1/releases/1.5.0/yarn-plugin',
     ]);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockInstall).toHaveBeenCalledTimes(1);
   });
 
   it('should handle missing manifest file when BACKSTAGE_MANIFEST_FILE is set', async () => {

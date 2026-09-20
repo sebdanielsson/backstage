@@ -14,7 +14,12 @@
  * limitations under the License.
  */
 
-import { BackstagePackageJson, PackageGraph } from '@backstage/cli-node';
+import {
+  BackstagePackageJson,
+  detectPackageManager,
+  PackageGraph,
+  PackageManager,
+} from '@backstage/cli-node';
 import { run, runOutput } from '@backstage/cli-common';
 import chalk from 'chalk';
 import { cli } from 'cleye';
@@ -74,6 +79,13 @@ interface BundleOptions {
  *   dependency specs are resolved to concrete versions in the packed output.
  */
 export async function bundleCommand(opts: BundleOptions): Promise<void> {
+  const pm = await detectPackageManager();
+  if (pm.name() !== 'yarn') {
+    throw new Error(
+      'The package bundle command currently only supports Yarn projects',
+    );
+  }
+
   const pkgJsonPath = targetPaths.resolve('package.json');
   const pkg = (await fs.readJson(pkgJsonPath)) as BackstagePackageJson;
 
@@ -381,6 +393,7 @@ export async function bundleCommand(opts: BundleOptions): Promise<void> {
 
     try {
       await packToDirectory({
+        packageManager: pm,
         packageDir: targetPaths.dir,
         packageName: pkg.name,
         targetDir: target,
@@ -501,7 +514,7 @@ export async function bundleCommand(opts: BundleOptions): Promise<void> {
 
     if (pluginType === 'backend') {
       if (opts.install) {
-        await installBundleDependencies(target, opts.verbose);
+        await installBundleDependencies(pm, target, opts.verbose);
 
         // Clean up .yarn directory created during install
         const yarnDir = joinPath(target, '.yarn');
@@ -719,6 +732,7 @@ async function pruneBundleLockfile(
  * This creates the node_modules directory needed for backend plugin runtime.
  */
 async function installBundleDependencies(
+  pm: PackageManager,
   targetDir: string,
   verbose: boolean,
 ): Promise<void> {
@@ -730,11 +744,12 @@ async function installBundleDependencies(
     '[yarn-install] ',
   );
   try {
-    await run(['yarn', 'install', '--immutable'], {
+    await pm.install({
+      immutable: true,
       cwd: targetDir,
       onStdout: installLog.logRunOutput('out'),
       onStderr: installLog.logRunOutput('err'),
-    }).waitForExit();
+    });
   } catch (err) {
     await installLog.close();
     await showLogOnError(installLog.path, verbose);

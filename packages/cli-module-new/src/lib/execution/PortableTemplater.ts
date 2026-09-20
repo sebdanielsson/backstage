@@ -24,11 +24,13 @@ import startCase from 'lodash/startCase';
 import upperCase from 'lodash/upperCase';
 import upperFirst from 'lodash/upperFirst';
 import lowerFirst from 'lodash/lowerFirst';
-import { YarnLockfile } from '@backstage/cli-node';
-import { targetPaths } from '@backstage/cli-common';
+import {
+  detectPackageManager,
+  Lockfile,
+  PackageManager,
+} from '@backstage/cli-node';
 
 import { createPackageVersionProvider } from '../version';
-import { hasBackstageYarnPlugin } from '@backstage/cli-node';
 
 const builtInHelpers = {
   camelCase,
@@ -48,16 +50,24 @@ type CreatePortableTemplaterOptions = {
 
 export class PortableTemplater {
   static async create(options: CreatePortableTemplaterOptions = {}) {
-    let lockfile: YarnLockfile | undefined;
+    let pm: PackageManager | undefined;
     try {
-      lockfile = await YarnLockfile.load(targetPaths.resolveRoot('yarn.lock'));
+      pm = await detectPackageManager();
+    } catch {
+      /* ignored, versions are resolved without a package manager */
+    }
+
+    let lockfile: Lockfile | undefined;
+    try {
+      lockfile = await pm?.loadLockfile();
     } catch {
       /* ignored */
     }
 
-    const yarnPluginEnabled = await hasBackstageYarnPlugin();
+    const preferBackstageProtocol =
+      (await pm?.supportsBackstageVersionProtocol()) ?? false;
     const versionProvider = createPackageVersionProvider(lockfile, {
-      preferBackstageProtocol: yarnPluginEnabled,
+      preferBackstageProtocol,
     });
 
     const templater = new PortableTemplater(

@@ -17,10 +17,10 @@
 import { cli } from 'cleye';
 import { version as infoModuleVersion } from '../../package.json';
 import os from 'node:os';
-import { runOutput, targetPaths, findOwnPaths } from '@backstage/cli-common';
+import { targetPaths, findOwnPaths } from '@backstage/cli-common';
 import {
   BackstagePackageJson,
-  YarnLockfile,
+  detectPackageManager,
   PackageGraph,
 } from '@backstage/cli-node';
 import { minimatch } from 'minimatch';
@@ -79,7 +79,8 @@ export default async ({ args, info }: CliCommandContext) => {
   const options = { include, format: format as 'text' | 'json' };
 
   await new Promise(async () => {
-    const yarnVersion = await runOutput(['yarn', '--version']);
+    const pm = await detectPackageManager();
+    const packageManagerInfo = { name: pm.name(), version: pm.version() };
     /* eslint-disable-next-line no-restricted-syntax */
     const isLocal = fs.existsSync(findOwnPaths(__dirname).resolve('./src'));
 
@@ -115,7 +116,9 @@ export default async ({ args, info }: CliCommandContext) => {
     const systemInfo = {
       os: `${os.type} ${os.release} - ${os.platform}/${os.arch}`,
       node: process.version,
-      yarn: yarnVersion,
+      // The yarn field is kept for existing consumers of the JSON output
+      ...(pm.name() === 'yarn' ? { yarn: pm.version() } : undefined),
+      packageManager: packageManagerInfo,
       ...(cliVersion
         ? { cli: { version: cliVersion, local: isLocal } }
         : undefined),
@@ -123,8 +126,7 @@ export default async ({ args, info }: CliCommandContext) => {
       backstage: backstageVersion,
     };
 
-    const lockfilePath = targetPaths.resolveRoot('yarn.lock');
-    const lockfile = await YarnLockfile.load(lockfilePath);
+    const lockfile = await pm.loadLockfile();
     const targetPath = targetPaths.rootDir;
 
     // Get workspace package names and their versions
@@ -222,7 +224,9 @@ export default async ({ args, info }: CliCommandContext) => {
     // Print to console
     console.log(`OS:   ${systemInfo.os}`);
     console.log(`node: ${systemInfo.node}`);
-    console.log(`yarn: ${systemInfo.yarn}`);
+    console.log(
+      `${systemInfo.packageManager.name}: ${systemInfo.packageManager.version}`,
+    );
     if (cliVersion) {
       console.log(`cli:  ${cliVersion} (${isLocal ? 'local' : 'installed'})`);
     }

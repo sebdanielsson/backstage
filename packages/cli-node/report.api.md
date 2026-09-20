@@ -255,7 +255,7 @@ export interface PackageManager {
   loadLockfile(): Promise<Lockfile>;
   lockfileName(): string;
   name(): string;
-  pack(output: string, packageDir: string): Promise<void>;
+  pack(output: string, packageDir: string, options?: RunOptions): Promise<void>;
   parseLockfile(contents: string): Promise<Lockfile>;
   run(args: string[], options?: RunOptions): Promise<void>;
   runScript(
@@ -377,7 +377,7 @@ export class Yarn implements PackageManager {
   loadLockfile(): Promise<Lockfile>;
   lockfileName(): string;
   name(): string;
-  pack(output: string, packageDir: string): Promise<void>;
+  pack(output: string, packageDir: string, options?: RunOptions): Promise<void>;
   parseLockfile(contents: string): Promise<Lockfile>;
   run(args: string[], options?: RunOptions): Promise<void>;
   runScript(

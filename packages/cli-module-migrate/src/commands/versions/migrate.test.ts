@@ -17,8 +17,8 @@ import {
   MockDirectory,
   createMockDirectory,
 } from '@backstage/backend-test-utils';
-import * as runObj from '@backstage/cli-common';
 import { overrideTargetPaths } from '@backstage/cli-common/testUtils';
+import { detectPackageManager, PackageManager } from '@backstage/cli-node';
 import migrate from './migrate';
 import { withLogCollector } from '@backstage/test-utils';
 import fs from 'fs-extra';
@@ -44,12 +44,15 @@ jest.mock('@backstage/cli-common', () => {
         return mockDir.path;
       },
     }),
-    run: jest.fn().mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    }),
   };
 });
+
+jest.mock('@backstage/cli-node', () => ({
+  ...jest.requireActual('@backstage/cli-node'),
+  detectPackageManager: jest.fn(),
+}));
+
+const mockInstall = jest.fn();
 
 function expectLogsToMatch(receivedLogs: String[], expected: String[]): void {
   expect(receivedLogs.filter(Boolean).sort()).toEqual(expected.sort());
@@ -60,14 +63,16 @@ describe('versions:migrate', () => {
   beforeAll(() => overrideTargetPaths(mockDir.path));
 
   beforeEach(() => {
-    (runObj.run as jest.Mock).mockReturnValue({
-      exitCode: null,
-      waitForExit: jest.fn().mockResolvedValue(undefined),
-    });
+    jest.mocked(detectPackageManager).mockResolvedValue({
+      name: () => 'yarn',
+      install: mockInstall,
+      getCommandHint: (args: string[]) => ['yarn', ...args].join(' '),
+    } as unknown as PackageManager);
   });
 
   afterEach(() => {
-    (runObj.run as jest.Mock).mockClear();
+    jest.mocked(detectPackageManager).mockReset();
+    mockInstall.mockClear();
   });
 
   it('should bump to the moved version when the package is moved', async () => {
@@ -140,11 +145,7 @@ describe('versions:migrate', () => {
       'Could not find package.json for @backstage/theme@^1.0.0 in b (dependencies)',
     ]);
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const packageA = await fs.readJson(
       mockDir.resolve('packages/a/package.json'),
@@ -232,11 +233,7 @@ describe('versions:migrate', () => {
       await migrate({ args: [], info: { usage: 'test', name: 'test' } });
     });
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const indexA = await fs.readFile(
       mockDir.resolve('packages/a/src/index.ts'),
@@ -314,11 +311,7 @@ describe('versions:migrate', () => {
       await migrate({ args: [], info: { usage: 'test', name: 'test' } });
     });
 
-    expect(runObj.run).toHaveBeenCalledTimes(1);
-    expect(runObj.run).toHaveBeenCalledWith(
-      ['yarn', 'install'],
-      expect.any(Object),
-    );
+    expect(mockInstall).toHaveBeenCalledTimes(1);
 
     const indexA = await fs.readFile(
       mockDir.resolve('packages/a/src/index.ts'),

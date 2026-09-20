@@ -17,6 +17,7 @@
 import {
   BackstagePackage,
   BackstagePackageJson,
+  detectPackageManager,
   PackageGraph,
   PackageRole,
   PackageRoles,
@@ -49,16 +50,21 @@ export async function readFixablePackages(): Promise<FixablePackage[]> {
   return packages.map(pkg => ({ ...pkg, changed: false }));
 }
 
-export function printPackageFixHint(packages: FixablePackage[]) {
+export async function printPackageFixHint(
+  packages: FixablePackage[],
+): Promise<boolean> {
   const changed = packages.filter(pkg => pkg.changed);
   if (changed.length > 0) {
     const rootPkg = require(targetPaths.resolveRoot('package.json'));
     const fixCmd =
       rootPkg.scripts?.fix === 'backstage-cli repo fix'
-        ? 'fix'
-        : 'backstage-cli repo fix';
+        ? ['fix']
+        : ['backstage-cli', 'repo', 'fix'];
+    const pm = await detectPackageManager();
     console.log(
-      `The following packages are out of sync, run 'yarn ${fixCmd}' to fix them:`,
+      `The following packages are out of sync, run '${pm.getCommandHint(
+        fixCmd,
+      )}' to fix them:`,
     );
     for (const pkg of changed) {
       console.log(`  ${pkg.packageJson.name}`);
@@ -540,7 +546,7 @@ export default async ({
   }
 
   if (check) {
-    if (printPackageFixHint(packages)) {
+    if (await printPackageFixHint(packages)) {
       process.exit(1);
     }
   } else {
