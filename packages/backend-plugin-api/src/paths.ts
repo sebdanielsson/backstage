@@ -16,7 +16,7 @@
 
 import { isChildPath } from '@backstage/cli-common';
 import { NotAllowedError } from '@backstage/errors';
-import { resolve as resolvePath } from 'node:path';
+import { dirname, resolve as resolvePath } from 'node:path';
 
 /** @internal */
 export const packagePathMocks = new Map<
@@ -48,7 +48,35 @@ export function resolvePackagePath(name: string, ...paths: string[]) {
       ? require
       : __non_webpack_require__;
 
-  return resolvePath(req.resolve(`${name}/package.json`), '..', ...paths);
+  const packageJsonPath = `${name}/package.json`;
+  try {
+    return resolvePath(req.resolve(packageJsonPath), '..', ...paths);
+  } catch (error) {
+    if (!isModuleNotFoundError(error)) {
+      throw error;
+    }
+  }
+
+  // Some package managers, for example pnpm, do not link workspace packages
+  // into the root node_modules directory. They are only reachable from the
+  // packages that depend on them, so retry from the running package.
+  const fallbackPaths = [process.cwd()];
+  if (req.main?.filename) {
+    fallbackPaths.push(dirname(req.main.filename));
+  }
+  return resolvePath(
+    req.resolve(packageJsonPath, { paths: fallbackPaths }),
+    '..',
+    ...paths,
+  );
+}
+
+function isModuleNotFoundError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { code?: unknown }).code === 'MODULE_NOT_FOUND'
+  );
 }
 
 /**

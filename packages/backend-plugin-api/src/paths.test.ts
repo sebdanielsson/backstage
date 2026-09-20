@@ -15,9 +15,35 @@
  */
 
 import { createMockDirectory } from '@backstage/backend-test-utils';
-import { resolveSafeChildPath } from './paths';
+import { resolve as resolvePath } from 'node:path';
+import { resolvePackagePath, resolveSafeChildPath } from './paths';
 
 describe('paths', () => {
+  describe('resolvePackagePath', () => {
+    const mockDir = createMockDirectory();
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should resolve packages that are only reachable from the running package', () => {
+      mockDir.setContent({
+        'node_modules/fallback-pkg/package.json': '{"name":"fallback-pkg"}',
+      });
+      jest.spyOn(process, 'cwd').mockReturnValue(mockDir.path);
+
+      expect(resolvePackagePath('@backstage/errors')).toBe(
+        resolvePath(require.resolve('@backstage/errors/package.json'), '..'),
+      );
+      expect(resolvePackagePath('fallback-pkg', 'dist', 'static')).toBe(
+        mockDir.resolve('node_modules/fallback-pkg/dist/static'),
+      );
+      expect(() => resolvePackagePath('missing-pkg')).toThrow(
+        expect.objectContaining({ code: 'MODULE_NOT_FOUND' }),
+      );
+    });
+  });
+
   describe('resolveSafeChildPath', () => {
     const mockDir = createMockDirectory();
     const secondDirectory = createMockDirectory();
