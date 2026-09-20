@@ -169,6 +169,32 @@ describe('Yarn', () => {
         'YARN_ENABLE_IMMUTABLE_INSTALLS',
       );
 
+      await berry.install({ immutable: true, offline: true });
+      expect(mockRun).toHaveBeenLastCalledWith(
+        ['yarn', 'install', '--immutable'],
+        expect.objectContaining({
+          env: expect.objectContaining({ YARN_ENABLE_NETWORK: '0' }),
+        }),
+      );
+
+      // The install options win over the environment given by the caller
+      await berry.install({
+        offline: true,
+        env: { YARN_ENABLE_NETWORK: '1', EXTRA: 'value' },
+      });
+      expect(mockRun.mock.lastCall![1]!.env).toEqual(
+        expect.objectContaining({ YARN_ENABLE_NETWORK: '0', EXTRA: 'value' }),
+      );
+
+      await classic.install({ immutable: true, offline: true });
+      expect(mockRun).toHaveBeenLastCalledWith(
+        ['yarn', 'install', '--frozen-lockfile', '--offline'],
+        expect.anything(),
+      );
+      expect(mockRun.mock.lastCall![1]!.env).not.toHaveProperty(
+        'YARN_ENABLE_NETWORK',
+      );
+
       const onStdout = jest.fn();
       const onStderr = jest.fn();
       await berry.install({

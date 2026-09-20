@@ -172,6 +172,12 @@ describe('Pnpm', () => {
       expect.anything(),
     );
 
+    await pnpm.install({ immutable: true, offline: true });
+    expect(mockRun).toHaveBeenLastCalledWith(
+      ['pnpm', 'install', '--frozen-lockfile', '--offline'],
+      expect.anything(),
+    );
+
     const onStdout = jest.fn();
     const onStderr = jest.fn();
     await pnpm.install({

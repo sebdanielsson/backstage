@@ -2175,6 +2175,7 @@ __metadata:
     util: "npm:^0.12.3"
     webpack: "npm:~5.105.0"
     webpack-dev-server: "npm:^5.0.0"
+    yaml: "npm:^2.0.0"
     yml-loader: "npm:^2.1.0"
     yn: "npm:^4.0.0"
     zod: "npm:^3.25.76 || ^4.0.0"
