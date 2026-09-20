@@ -320,6 +320,7 @@ navbar
 neuro
 newrelic
 nginx
+node_modules
 nodegit
 nodemailer
 nodejs
