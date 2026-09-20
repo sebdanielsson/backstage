@@ -16,12 +16,24 @@
 
 import { getPackages } from '@manypkg/get-packages';
 import { PackageGraph } from './PackageGraph';
-import { Lockfile } from './Lockfile';
+import { YarnLockfile } from '../pacman/yarn/YarnLockfile';
+import { detectPackageManager } from '../pacman';
 import { GitUtils } from '../git';
 import { overrideTargetPaths } from '@backstage/cli-common/testUtils';
 
+jest.mock('../pacman', () => ({
+  detectPackageManager: jest.fn(),
+}));
+
 const mockListChangedFiles = jest.spyOn(GitUtils, 'listChangedFiles');
 const mockReadFileAtRef = jest.spyOn(GitUtils, 'readFileAtRef');
+const mockLoadLockfile = jest.fn();
+
+jest.mocked(detectPackageManager).mockResolvedValue({
+  lockfileName: () => 'yarn.lock',
+  loadLockfile: mockLoadLockfile,
+  parseLockfile: async (contents: string) => YarnLockfile.parse(contents),
+} as unknown as Awaited<ReturnType<typeof detectPackageManager>>);
 
 overrideTargetPaths('/');
 
@@ -173,6 +185,55 @@ describe('PackageGraph', () => {
     ).resolves.toEqual([graph.get('a'), graph.get('b')]);
   });
 
+  it('does not detect the package manager when no lockfile changed', async () => {
+    const graph = PackageGraph.fromPackages(testPackages);
+    jest.mocked(detectPackageManager).mockClear();
+    mockLoadLockfile.mockClear();
+
+    mockListChangedFiles.mockResolvedValueOnce(
+      ['README.md', 'packages/a/src/foo.ts'].sort(),
+    );
+
+    await expect(
+      graph
+        .listChangedPackages({
+          ref: 'origin/master',
+          analyzeLockfile: true,
+        })
+        .then(pkgs => pkgs.map(pkg => pkg.name)),
+    ).resolves.toEqual(['a']);
+
+    expect(detectPackageManager).not.toHaveBeenCalled();
+    expect(mockLoadLockfile).not.toHaveBeenCalled();
+  });
+
+  it('assumes all packages changed when a changed lockfile is not the detected one', async () => {
+    const graph = PackageGraph.fromPackages(testPackages);
+    mockLoadLockfile.mockClear();
+
+    mockListChangedFiles.mockResolvedValueOnce(
+      ['packages/a/src/foo.ts', 'pnpm-lock.yaml', 'yarn.lock'].sort(),
+    );
+
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await expect(
+        graph
+          .listChangedPackages({
+            ref: 'origin/master',
+            analyzeLockfile: true,
+          })
+          .then(pkgs => pkgs.map(pkg => pkg.name)),
+      ).resolves.toEqual(testPackages.map(pkg => pkg.packageJson.name));
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('assuming all packages have changed'),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+    expect(mockLoadLockfile).not.toHaveBeenCalled();
+  });
+
   it('lists changed packages with lockfile analysis', async () => {
     const graph = PackageGraph.fromPackages(testPackages);
 
@@ -192,8 +253,8 @@ c-dep@^2:
   version: "2.0.0"
   integrity: sha512-xyz
 `);
-    jest.spyOn(Lockfile, 'load').mockResolvedValueOnce(
-      Lockfile.parse(`
+    mockLoadLockfile.mockResolvedValueOnce(
+      YarnLockfile.parse(`
 a@^1:
   version: "1.0.0"
 
@@ -247,8 +308,8 @@ c@^1:
 `);
 
     // The current lockfile no longer has b-dep at all
-    jest.spyOn(Lockfile, 'load').mockResolvedValueOnce(
-      Lockfile.parse(`
+    mockLoadLockfile.mockResolvedValueOnce(
+      YarnLockfile.parse(`
 a@^1:
   version: "1.0.0"
 

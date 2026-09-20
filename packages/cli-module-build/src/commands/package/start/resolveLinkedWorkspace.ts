@@ -37,7 +37,10 @@ export async function resolveLinkedWorkspace(
       );
     });
 
-  if (!pkgJson.workspaces) {
+  const isPnpmWorkspace = await fs.pathExists(
+    resolvePath(dir, 'pnpm-workspace.yaml'),
+  );
+  if (!pkgJson.workspaces && !isPnpmWorkspace) {
     throw new Error(
       `Invalid workspace link, directory is not a workspace: ${dir}`,
     );

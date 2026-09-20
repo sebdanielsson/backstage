@@ -15,8 +15,16 @@
  */
 
 /* eslint-disable no-restricted-syntax */
-import { resolve as resolvePath } from 'node:path';
-import { findPaths, findRootPath, findOwnRootDir, findOwnPaths } from './paths';
+import fs from 'node:fs';
+import os from 'node:os';
+import { join as joinPath, resolve as resolvePath } from 'node:path';
+import {
+  findPaths,
+  findRootPath,
+  findOwnRootDir,
+  findOwnPaths,
+  targetPaths,
+} from './paths';
 
 describe('paths', () => {
   afterEach(() => {
@@ -109,6 +117,57 @@ describe('paths', () => {
       resolvePath(__dirname, '../../cli-common/src'),
     );
     expect(paths.targetRoot).toBe(resolvePath(__dirname, '../../cli-common'));
+  });
+
+  describe('with pnpm-workspace.yaml', () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.realpathSync(
+        fs.mkdtempSync(joinPath(os.tmpdir(), 'backstage-cli-common-paths-')),
+      );
+    });
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('targetPaths should find the root of a pnpm workspace', () => {
+      fs.writeFileSync(
+        joinPath(tmpDir, 'package.json'),
+        JSON.stringify({ name: 'root' }),
+      );
+      fs.writeFileSync(
+        joinPath(tmpDir, 'pnpm-workspace.yaml'),
+        'packages:\n  - packages/*\n',
+      );
+      const pkgDir = joinPath(tmpDir, 'packages', 'a');
+      fs.mkdirSync(joinPath(pkgDir, 'src'), { recursive: true });
+      fs.writeFileSync(
+        joinPath(pkgDir, 'package.json'),
+        JSON.stringify({ name: 'a' }),
+      );
+
+      jest.spyOn(process, 'cwd').mockReturnValue(tmpDir);
+      expect(targetPaths.dir).toBe(tmpDir);
+      expect(targetPaths.rootDir).toBe(tmpDir);
+      expect(targetPaths.resolveRoot('derp.txt')).toBe(
+        joinPath(tmpDir, 'derp.txt'),
+      );
+
+      // A nested package without a workspaces field should resolve to the pnpm root
+      jest.spyOn(process, 'cwd').mockReturnValue(joinPath(pkgDir, 'src'));
+      expect(targetPaths.dir).toBe(joinPath(pkgDir, 'src'));
+      expect(targetPaths.rootDir).toBe(tmpDir);
+      expect(targetPaths.resolveRoot('derp.txt')).toBe(
+        joinPath(tmpDir, 'derp.txt'),
+      );
+
+      // Without pnpm-workspace.yaml the nested package is its own root
+      fs.rmSync(joinPath(tmpDir, 'pnpm-workspace.yaml'));
+      jest.spyOn(process, 'cwd').mockReturnValue(pkgDir);
+      expect(targetPaths.rootDir).toBe(pkgDir);
+    });
   });
 
   it('findPaths should find workspace root with array', () => {

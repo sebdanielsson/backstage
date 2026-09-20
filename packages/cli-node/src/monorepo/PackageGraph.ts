@@ -19,8 +19,13 @@ import { getPackages, Package } from '@manypkg/get-packages';
 import { targetPaths } from '@backstage/cli-common';
 import { PackageRole } from '../roles';
 import { GitUtils } from '../git';
-import { Lockfile } from './Lockfile';
+import { detectPackageManager, Lockfile } from '../pacman';
 import { JsonValue } from '@backstage/types';
+
+// Lockfile names of the package managers that can be detected. Detection is
+// only run when one of these files has changed, to avoid spawning the package
+// manager when it is not needed.
+const LOCKFILE_NAMES = ['yarn.lock', 'pnpm-lock.yaml'];
 
 /**
  * A list of the feature types we want to extract from the project
@@ -368,16 +373,28 @@ export class PackageGraph extends Map<string, PackageGraphNode> {
       }
     }
 
-    if (changedFiles.includes('yarn.lock') && options.analyzeLockfile) {
+    const lockfileChanged =
+      options.analyzeLockfile &&
+      changedFiles.some(file => LOCKFILE_NAMES.includes(file));
+    if (lockfileChanged) {
       // Load the lockfile in the working tree and the one at the ref and diff them
       let thisLockfile: Lockfile;
       let otherLockfile: Lockfile;
       try {
-        thisLockfile = await Lockfile.load(
-          targetPaths.resolveRoot('yarn.lock'),
+        const pm = await detectPackageManager();
+        const foreignLockfile = changedFiles.find(
+          file => LOCKFILE_NAMES.includes(file) && file !== pm.lockfileName(),
         );
-        otherLockfile = Lockfile.parse(
-          await GitUtils.readFileAtRef('yarn.lock', options.ref),
+        if (foreignLockfile || !changedFiles.includes(pm.lockfileName())) {
+          throw new Error(
+            `The changed lockfile ${
+              foreignLockfile ?? pm.lockfileName()
+            } does not belong to the detected package manager ${pm.name()}`,
+          );
+        }
+        thisLockfile = await pm.loadLockfile();
+        otherLockfile = await pm.parseLockfile(
+          await GitUtils.readFileAtRef(pm.lockfileName(), options.ref),
         );
       } catch (error) {
         console.warn(

@@ -34,6 +34,16 @@ describe('isMonoRepo', () => {
     await expect(isMonoRepo()).resolves.toBe(true);
   });
 
+  it('should detect a pnpm monorepo', async () => {
+    mockDir.setContent({
+      'package.json': JSON.stringify({
+        name: 'foo',
+      }),
+      'pnpm-workspace.yaml': 'packages:\n  - packages/*\n',
+    });
+    await expect(isMonoRepo()).resolves.toBe(true);
+  });
+
   it('should detect a non- monorepo', async () => {
     mockDir.setContent({
       'package.json': JSON.stringify({
