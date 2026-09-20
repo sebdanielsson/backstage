@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BACKSTAGE_JSON, run, targetPaths } from '@backstage/cli-common';
+import { BACKSTAGE_JSON, targetPaths } from '@backstage/cli-common';
 
 import { env } from 'node:process';
 import fs from 'fs-extra';
@@ -24,11 +24,7 @@ import { cli } from 'cleye';
 import { isError, NotFoundError } from '@backstage/errors';
 import { resolve as resolvePath } from 'node:path';
 
-import {
-  hasBackstageYarnPlugin,
-  Lockfile,
-  runConcurrentTasks,
-} from '@backstage/cli-node';
+import { detectPackageManager, runConcurrentTasks } from '@backstage/cli-node';
 import {
   fetchPackageInfo,
   mapDependencies,
@@ -40,7 +36,7 @@ import {
   ReleaseManifest,
 } from '@backstage/release-manifests';
 import { migrateMovedPackages } from './migrate';
-import { runYarnInstall } from '../../lib/utils';
+import { runInstall } from '../../lib/utils';
 import type { CliCommandContext } from '@backstage/cli-node';
 
 const DEP_TYPES = [
@@ -86,7 +82,7 @@ export default async ({ args, info }: CliCommandContext) => {
         },
         skipInstall: {
           type: Boolean,
-          description: 'Skips yarn install step',
+          description: 'Skips the install step',
         },
         skipMigrate: {
           type: Boolean,
@@ -98,9 +94,9 @@ export default async ({ args, info }: CliCommandContext) => {
     args,
   );
 
-  const lockfilePath = targetPaths.resolveRoot('yarn.lock');
-  const lockfile = await Lockfile.load(lockfilePath);
-  const yarnPluginEnabled = await hasBackstageYarnPlugin();
+  const pm = await detectPackageManager();
+  const lockfile = await pm.loadLockfile();
+  const yarnPluginEnabled = await pm.supportsBackstageVersionProtocol();
 
   let pattern = patternFlag;
 
@@ -165,7 +161,7 @@ export default async ({ args, info }: CliCommandContext) => {
       ? `${env.BACKSTAGE_VERSIONS_BASE_URL}/v1/releases/${releaseManifest.releaseVersion}/yarn-plugin`
       : `https://versions.backstage.io/v1/releases/${releaseManifest.releaseVersion}/yarn-plugin`;
 
-    await run(['yarn', 'plugin', 'import', yarnPluginUrl]).waitForExit();
+    await pm.run(['plugin', 'import', yarnPluginUrl]);
     console.log();
   }
 
@@ -289,11 +285,11 @@ export default async ({ args, info }: CliCommandContext) => {
     }
 
     if (!skipInstall) {
-      await runYarnInstall();
+      await runInstall(pm);
     } else {
       console.log();
 
-      console.log(chalk.yellow(`Skipping yarn install`));
+      console.log(chalk.yellow(`Skipping ${pm.getCommandHint(['install'])}`));
     }
 
     if (!skipMigrate) {
@@ -304,7 +300,7 @@ export default async ({ args, info }: CliCommandContext) => {
       });
 
       if (changed && !skipInstall) {
-        await runYarnInstall();
+        await runInstall(pm);
       }
     }
 

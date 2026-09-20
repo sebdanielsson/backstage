@@ -22,7 +22,11 @@ import yargs from 'yargs';
 // eslint-disable-next-line @backstage/no-undeclared-imports
 import { run as runJest, yargsOptions as jestYargsOptions } from 'jest-cli';
 import { relative as relativePath } from 'node:path';
-import { Lockfile, PackageGraph, SuccessCache } from '@backstage/cli-node';
+import {
+  detectPackageManager,
+  PackageGraph,
+  SuccessCache,
+} from '@backstage/cli-node';
 
 import {
   findOwnPaths,
@@ -345,9 +349,7 @@ export default async ({ args, info }: CliCommandContext) => {
       // This is called by `config/jest.js` after the project configs have been gathered
       async filterConfigs(projectConfigs, globalRootConfig) {
         const cacheEntries = await cache.read();
-        const lockfile = await Lockfile.load(
-          targetPaths.resolveRoot('yarn.lock'),
-        );
+        const lockfile = await (await detectPackageManager()).loadLockfile();
         const getPackageTreeHash = await readPackageTreeHashes(graph);
 
         // Base hash shared by all projects

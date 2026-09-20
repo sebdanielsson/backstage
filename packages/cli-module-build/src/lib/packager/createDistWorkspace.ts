@@ -25,7 +25,7 @@ import { tmpdir } from 'node:os';
 import * as tar from 'tar';
 import partition from 'lodash/partition';
 
-import { run, targetPaths } from '@backstage/cli-common';
+import { targetPaths } from '@backstage/cli-common';
 import { computeTopologicalLayers } from './computeTopologicalLayers';
 import {
   dependencies as cliDependencies,
@@ -40,6 +40,8 @@ import {
 import { compilePackageConfigSchemas, productionPack } from './productionPack';
 import {
   BackstagePackage,
+  detectPackageManager,
+  PackageManager,
   PackageRoles,
   PackageGraph,
   PackageGraphNode,
@@ -74,7 +76,8 @@ type Options = {
   /**
    * Files to copy into the target workspace.
    *
-   * Defaults to ['yarn.lock', 'package.json'].
+   * Defaults to the package manager's lockfile and 'package.json', along with
+   * 'pnpm-workspace.yaml' if it exists in the root of the target project.
    */
   files?: FileEntry[];
 
@@ -95,9 +98,9 @@ type Options = {
   skeleton?: 'skeleton.tar' | 'skeleton.tar.gz';
 
   /**
-   * If set to true, `yarn pack` is always preferred when creating the dist
-   * workspace. This ensures correct workspace output at significant cost to
-   * command performance.
+   * If set to true, the package manager's pack command is always preferred
+   * when creating the dist workspace. This ensures correct workspace output at
+   * significant cost to command performance.
    */
   alwaysPack?: boolean;
 
@@ -131,18 +134,19 @@ function prefixLogFunc(prefix: string, logFn: (msg: string) => void) {
 }
 
 /**
- * Uses `yarn pack` to package local packages and unpacks them into a dist workspace.
- * The target workspace will end up containing dist version of each package and
- * will be suitable for packaging e.g. into a docker image.
+ * Uses the package manager's pack command to package local packages and unpacks
+ * them into a dist workspace. The target workspace will end up containing dist
+ * version of each package and will be suitable for packaging e.g. into a docker image.
  *
  * This creates a structure that is functionally similar to if the packages were
- * installed from npm, but uses Yarn workspaces to link to them at runtime.
+ * installed from npm, but uses package manager workspaces to link to them at runtime.
  */
 export async function createDistWorkspace(
   packageNames: string[],
   options: Options = {},
 ) {
   const logger = options.logger ?? { log: console.log, warn: console.warn };
+  const pm = await detectPackageManager();
 
   const targetDir =
     options.targetDir ??
@@ -229,17 +233,18 @@ export async function createDistWorkspace(
       await runConcurrentTasks({
         items: customBuild,
         worker: async ({ name, dir, args }) => {
-          await run(['yarn', 'run', 'build', ...(args || [])], {
+          await pm.runScript('build', args, {
             cwd: dir,
             onStdout: prefixLogFunc(`${name}: `, logger.log),
             onStderr: prefixLogFunc(`${name}: `, logger.warn),
-          }).waitForExit();
+          });
         },
       });
     }
   }
 
   await moveToDistWorkspace(
+    pm,
     targetDir,
     targets,
     Boolean(options.alwaysPack),
@@ -247,7 +252,7 @@ export async function createDistWorkspace(
     logger,
   );
 
-  const files: FileEntry[] = options.files ?? ['yarn.lock', 'package.json'];
+  const files: FileEntry[] = options.files ?? (await getDefaultFiles(pm));
 
   for (const file of files) {
     const src = typeof file === 'string' ? file : file.src;
@@ -285,34 +290,53 @@ const FAST_PACK_SCRIPTS = [
 ];
 
 /**
- * Runs `yarn pack` on a single package and extracts the resulting tarball
- * into `targetDir`. This resolves `workspace:^` and `backstage:^` dependency
- * specs to concrete versions via yarn's `beforeWorkspacePacking` hook.
+ * Returns the files that are copied into the dist workspace by default: the
+ * package manager's lockfile and the root package.json, along with the pnpm
+ * workspace configuration for pnpm projects.
+ */
+async function getDefaultFiles(pm: PackageManager): Promise<FileEntry[]> {
+  const files: FileEntry[] = [pm.lockfileName(), 'package.json'];
+  if (
+    pm.name() === 'pnpm' &&
+    (await fs.pathExists(targetPaths.resolveRoot('pnpm-workspace.yaml')))
+  ) {
+    files.push('pnpm-workspace.yaml');
+  }
+  return files;
+}
+
+/**
+ * Runs the package manager's pack command on a single package and extracts
+ * the resulting tarball into `targetDir`. This resolves `workspace:^` and
+ * `backstage:^` dependency specs to concrete versions, which with Yarn is done
+ * via the `beforeWorkspacePacking` hook.
  */
 export async function packToDirectory(options: {
+  packageManager: PackageManager;
   packageDir: string;
   packageName: string;
   targetDir: string;
   archivePath?: string;
   logger: { log(msg: string): void; warn(msg: string): void };
 }): Promise<void> {
-  const { packageDir, packageName, targetDir, logger } = options;
+  const { packageManager, packageDir, packageName, targetDir, logger } =
+    options;
   const archivePath =
     options.archivePath ?? resolvePath(targetDir, 'temp-archive.tgz');
   const prefix = `${packageName} [pack]: `;
 
   await fs.ensureDir(targetDir);
-  await run(['yarn', 'pack', '--filename', archivePath], {
-    cwd: packageDir,
+  await packageManager.pack(archivePath, packageDir, {
     onStdout: prefixLogFunc(prefix, logger.log),
     onStderr: prefixLogFunc(prefix, logger.warn),
-  }).waitForExit();
+  });
 
   await tar.extract({ file: archivePath, cwd: targetDir, strip: 1 });
   await fs.remove(archivePath);
 }
 
 async function moveToDistWorkspace(
+  pm: PackageManager,
   workspaceDir: string,
   localPackages: PackageGraphNode[],
   alwaysPack: boolean,
@@ -339,7 +363,7 @@ async function moveToDistWorkspace(
         )
       : undefined;
 
-  // New an improved flow where we avoid calling `yarn pack`
+  // New an improved flow where we avoid calling the package manager's pack command
   await Promise.all(
     fastPackPackages.map(async target => {
       logger.log(`Moving ${target.name} into dist workspace`);
@@ -355,7 +379,7 @@ async function moveToDistWorkspace(
     }),
   );
 
-  // Old flow is below, which calls `yarn pack` and extracts the tarball
+  // Old flow is below, which calls the package manager's pack command and extracts the tarball
 
   let archiveIndex = 0;
 
@@ -370,6 +394,7 @@ async function moveToDistWorkspace(
       relativePath(targetPaths.rootDir, target.dir),
     );
     await packToDirectory({
+      packageManager: pm,
       packageDir: target.dir,
       packageName: target.name,
       targetDir: absoluteOutputPath,

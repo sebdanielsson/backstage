@@ -60,6 +60,12 @@ more than just the `@backstage/*` dependencies.
 yarn backstage-cli versions:bump --pattern '@{backstage,roadiehq}/*'
 ```
 
+In a pnpm project, run `pnpm backstage-cli versions:bump` with the same
+options. The command writes explicit version ranges to your `package.json`
+files and runs `pnpm install`. The Backstage Yarn plugin and its `backstage:^`
+versions are not available with pnpm. See
+[Package Managers](../tooling/package-managers.md) for details.
+
 ## Following create-app template changes
 
 The `@backstage/create-app` command creates the initial structure of your
@@ -78,6 +84,10 @@ a consolidated view of all the changes between two versions of Backstage. You
 can find the current version of your Backstage installation in `backstage.json`.
 
 ## Managing package versions with the Backstage yarn plugin
+
+:::note
+This section applies to Yarn projects only. The plugin has no pnpm equivalent.
+:::
 
 The Backstage yarn plugin makes it easier to manage Backstage package versions,
 by determining the appropriate version for each package based on the overall

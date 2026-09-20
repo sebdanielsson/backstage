@@ -5,6 +5,8 @@
 ```ts
 import { JsonValue } from '@backstage/types';
 import { Package } from '@manypkg/get-packages';
+import { RunOnOutput } from '@backstage/cli-common';
+import { RunOptions } from '@backstage/cli-common';
 
 // @public
 export type BackstagePackage = {
@@ -149,27 +151,27 @@ export function createCliModule(options: {
 }): CliModule;
 
 // @public
+export function detectPackageManager(): Promise<PackageManager>;
+
+// @public
 export class GitUtils {
   static listChangedFiles(ref: string): Promise<string[]>;
   static readFileAtRef(path: string, ref: string): Promise<string>;
 }
 
-// @public
+// @public @deprecated
 export function hasBackstageYarnPlugin(workspaceDir?: string): Promise<boolean>;
 
 // @public
 export function isMonoRepo(): Promise<boolean>;
 
 // @public
-export class Lockfile {
+export interface Lockfile {
   createSimplifiedDependencyGraph(): Map<string, Set<string>>;
   diff(otherLockfile: Lockfile): LockfileDiff;
-  get(name: string): LockfileQueryEntry[] | undefined;
+  get(name: string): LockfileEntry[] | undefined;
   getDependencyTreeHash(startName: string): string;
   keys(): IterableIterator<string>;
-  static load(path: string): Promise<Lockfile>;
-  static parse(content: string): Lockfile;
-  toString(): string;
 }
 
 // @public
@@ -186,9 +188,13 @@ export type LockfileDiffEntry = {
 };
 
 // @public
-export type LockfileQueryEntry = {
+export type LockfileEntry = {
   range: string;
   version: string;
+};
+
+// @public
+export type LockfileQueryEntry = LockfileEntry & {
   dataKey: string;
 };
 
@@ -232,6 +238,53 @@ export type PackageGraphNode = {
 };
 
 // @public
+export type PackageInfo = {
+  name: string;
+  'dist-tags': Record<string, string>;
+  versions: string[];
+  time: {
+    [version: string]: string;
+  };
+};
+
+// @public
+export interface PackageManager {
+  fetchPackageInfo(name: string): Promise<PackageInfo>;
+  getCommandHint(args: string[]): string;
+  install(options?: PackageManagerInstallOptions): Promise<void>;
+  loadLockfile(): Promise<Lockfile>;
+  lockfileName(): string;
+  name(): string;
+  pack(output: string, packageDir: string, options?: RunOptions): Promise<void>;
+  parseLockfile(contents: string): Promise<Lockfile>;
+  run(args: string[], options?: RunOptions): Promise<void>;
+  runScript(
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  runWorkspaceScript(
+    workspace: string,
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  supportsBackstageVersionProtocol(): Promise<boolean>;
+  toString(): string;
+  version(): string;
+}
+
+// @public
+export type PackageManagerInstallOptions = {
+  immutable?: boolean;
+  offline?: boolean;
+  cwd?: string;
+  env?: Partial<NodeJS.ProcessEnv>;
+  onStdout?: RunOnOutput;
+  onStderr?: RunOnOutput;
+};
+
+// @public
 export type PackageOutputType = 'bundle' | 'types' | 'esm' | 'cjs';
 
 // @public
@@ -267,6 +320,53 @@ export class PackageRoles {
   static getRoleFromPackage(pkgJson: unknown): PackageRole | undefined;
   static getRoleInfo(role: string): PackageRoleInfo;
 }
+
+// @public
+export class Pnpm implements PackageManager {
+  static create(dir?: string): Promise<Pnpm>;
+  fetchPackageInfo(name: string): Promise<PackageInfo>;
+  getCommandHint(args: string[]): string;
+  install(options?: PackageManagerInstallOptions): Promise<void>;
+  loadLockfile(): Promise<Lockfile>;
+  lockfileName(): string;
+  name(): string;
+  pack(output: string, packageDir: string, options?: RunOptions): Promise<void>;
+  parseLockfile(contents: string): Promise<Lockfile>;
+  run(args: string[], options?: RunOptions): Promise<void>;
+  runScript(
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  runWorkspaceScript(
+    workspace: string,
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  supportsBackstageVersionProtocol(): Promise<boolean>;
+  toString(): string;
+  version(): string;
+}
+
+// @public
+export class PnpmLockfile implements Lockfile {
+  createSimplifiedDependencyGraph(): Map<string, Set<string>>;
+  diff(otherLockfile: Lockfile): LockfileDiff;
+  get(name: string): LockfileEntry[] | undefined;
+  getDependencyTreeHash(startName: string): string;
+  keys(): IterableIterator<string>;
+  static load(path: string): Promise<PnpmLockfile>;
+  static parse(
+    content: string,
+    options?: PnpmLockfileParseOptions,
+  ): Promise<PnpmLockfile>;
+}
+
+// @public
+export type PnpmLockfileParseOptions = {
+  workspaceDir?: string;
+};
 
 // @public
 export function runCli(options: {
@@ -315,4 +415,44 @@ export type WorkerQueueThreadsOptions<TItem, TResult, TContext> = {
     | Promise<(item: TItem) => Promise<TResult>>;
   context?: TContext;
 };
+
+// @public
+export class Yarn implements PackageManager {
+  static create(dir?: string): Promise<Yarn>;
+  fetchPackageInfo(name: string): Promise<PackageInfo>;
+  getCommandHint(args: string[]): string;
+  install(options?: PackageManagerInstallOptions): Promise<void>;
+  loadLockfile(): Promise<Lockfile>;
+  lockfileName(): string;
+  name(): string;
+  pack(output: string, packageDir: string, options?: RunOptions): Promise<void>;
+  parseLockfile(contents: string): Promise<Lockfile>;
+  run(args: string[], options?: RunOptions): Promise<void>;
+  runScript(
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  runWorkspaceScript(
+    workspace: string,
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+  supportsBackstageVersionProtocol(): Promise<boolean>;
+  toString(): string;
+  version(): string;
+}
+
+// @public
+export class YarnLockfile implements Lockfile {
+  createSimplifiedDependencyGraph(): Map<string, Set<string>>;
+  diff(otherLockfile: Lockfile): LockfileDiff;
+  get(name: string): LockfileQueryEntry[] | undefined;
+  getDependencyTreeHash(startName: string): string;
+  keys(): IterableIterator<string>;
+  static load(path: string): Promise<YarnLockfile>;
+  static parse(content: string): YarnLockfile;
+  toString(): string;
+}
 ```

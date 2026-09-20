@@ -36,6 +36,8 @@ const yarnRcSchema = z.object({
  * @param workspaceDir - The workspace root directory to check. Defaults to the target root.
  * @returns Promise resolving to true if the plugin is installed, false otherwise
  * @public
+ * @deprecated Use {@link detectPackageManager} and call
+ * {@link PackageManager.supportsBackstageVersionProtocol} on the result instead.
  */
 export async function hasBackstageYarnPlugin(
   workspaceDir?: string,

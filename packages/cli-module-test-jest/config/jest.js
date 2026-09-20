@@ -18,6 +18,7 @@ const fs = require('fs-extra');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const { glob } = require('glob');
+const { parse: parseYaml } = require('yaml');
 const { version } = require('../package.json');
 const paths = require('@backstage/cli-common').findPaths(process.cwd());
 const {
@@ -317,6 +318,20 @@ async function getProjectConfig(targetPath, extraConfig, extraOptions) {
   return config;
 }
 
+// pnpm workspaces declare their packages in pnpm-workspace.yaml rather than
+// in the workspaces field of the root package.json
+async function readPnpmWorkspacePatterns() {
+  const workspacePath = paths.resolveTargetRoot('pnpm-workspace.yaml');
+  if (!(await fs.pathExists(workspacePath))) {
+    return undefined;
+  }
+  const workspace = parseYaml(await fs.readFile(workspacePath, 'utf8'));
+  if (!Array.isArray(workspace?.packages)) {
+    return undefined;
+  }
+  return workspace.packages.filter(pattern => typeof pattern === 'string');
+}
+
 // This loads the root jest config, which in turn will either refer to a single
 // configuration for the current package, or a collection of configurations for
 // the target workspace packages
@@ -338,7 +353,9 @@ async function getRootConfig() {
   };
 
   const ws = rootPkgJson.workspaces;
-  const workspacePatterns = Array.isArray(ws) ? ws : ws?.packages;
+  const workspacePatterns = Array.isArray(ws)
+    ? ws
+    : ws?.packages ?? (await readPnpmWorkspacePatterns());
 
   // Check if we're running within a specific monorepo package. In that case just get the single project config.
   if (!workspacePatterns || paths.targetRoot !== paths.targetDir) {
@@ -365,12 +382,19 @@ async function getRootConfig() {
 
   // If the target package is a workspace root, we find all packages in the
   // workspace and load those in as separate jest projects instead.
+  // pnpm workspaces may exclude directories with negated patterns
+  const ignorePatterns = workspacePatterns
+    .filter(pattern => pattern.startsWith('!'))
+    .map(pattern => path.join(paths.targetRoot, pattern.slice(1)));
   const projectPaths = await Promise.all(
-    workspacePatterns.map(pattern =>
-      glob(path.join(paths.targetRoot, pattern), {
-        windowsPathsNoEscape: true,
-      }),
-    ),
+    workspacePatterns
+      .filter(pattern => !pattern.startsWith('!'))
+      .map(pattern =>
+        glob(path.join(paths.targetRoot, pattern), {
+          windowsPathsNoEscape: true,
+          ignore: ignorePatterns,
+        }),
+      ),
   ).then(_ => _.flat());
 
   let projects = await Promise.all(

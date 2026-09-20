@@ -15,10 +15,12 @@
  */
 
 import { Yarn } from './yarn';
+import { Pnpm } from './pnpm';
 import { Lockfile } from './Lockfile';
 import { targetPaths } from '@backstage/cli-common';
-import { RunOptions } from '@backstage/cli-common';
+import { RunOnOutput, RunOptions } from '@backstage/cli-common';
 import fs from 'fs-extra';
+import { resolve as resolvePath } from 'node:path';
 
 /**
  * Package info retrieved from the package manager, usually from NPM.
@@ -33,6 +35,41 @@ export type PackageInfo = {
 };
 
 /**
+ * Options for {@link PackageManager.install}.
+ *
+ * @public
+ */
+export type PackageManagerInstallOptions = {
+  /**
+   * Whether the lockfile must not be modified by the install. When set to
+   * `false`, the install is allowed to modify the lockfile even in environments
+   * where the package manager would otherwise refuse to, such as CI. When not
+   * set, the package manager's own default applies, which for both Yarn and
+   * pnpm means immutable installs in CI and mutable installs elsewhere.
+   */
+  immutable?: boolean;
+
+  /**
+   * Whether the install must not access the network. When set, packages are
+   * resolved and fetched from the package manager's local cache only, and the
+   * install fails if anything is missing from it.
+   */
+  offline?: boolean;
+
+  /** The directory to run the install in. Defaults to the current working directory. */
+  cwd?: string;
+
+  /** Additional environment variables to pass to the package manager. */
+  env?: Partial<NodeJS.ProcessEnv>;
+
+  /** Called with each chunk of output written to stdout by the package manager. */
+  onStdout?: RunOnOutput;
+
+  /** Called with each chunk of output written to stderr by the package manager. */
+  onStderr?: RunOnOutput;
+};
+
+/**
  * Represents the package manager in use by this instance of Backstage. This
  * interface allows Backstage adopters to change the package manager used by
  * their repo and still use the Backstage CLI, and it's helpful tooling.
@@ -40,28 +77,58 @@ export type PackageInfo = {
  * @public
  */
 export interface PackageManager {
-  /** The name of the package manager. */
+  /** The name of the package manager, for example `yarn`. */
   name(): string;
 
   /** The self-reported version of the package manager. */
   version(): string;
 
-  /** The file name of the lockfile used by the package manager. */
+  /** The file name of the lockfile used by the package manager, for example `yarn.lock`. */
   lockfileName(): string;
 
   /** Uses the package manager to run a command in the repo. */
   run(args: string[], options?: RunOptions): Promise<void>;
 
   /**
-   * Executes the package manager's pack command to bundle the repo into an
-   * archive.
+   * Runs the given `package.json` script through the package manager, with
+   * any additional arguments forwarded to the script.
    */
-  pack(output: string, packageDir: string): Promise<void>;
+  runScript(
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+
+  /**
+   * Runs the given `package.json` script of a specific workspace package
+   * through the package manager, with any additional arguments forwarded to
+   * the script.
+   */
+  runWorkspaceScript(
+    workspace: string,
+    script: string,
+    args?: string[],
+    options?: RunOptions,
+  ): Promise<void>;
+
+  /**
+   * Installs the dependencies of the repo. See
+   * {@link PackageManagerInstallOptions} for how to control whether the
+   * lockfile may be modified.
+   */
+  install(options?: PackageManagerInstallOptions): Promise<void>;
+
+  /**
+   * Executes the package manager's pack command to bundle the package in
+   * `packageDir` into an archive written to `output`. Any `options` are
+   * forwarded to the pack process, except that `cwd` is always `packageDir`.
+   */
+  pack(output: string, packageDir: string, options?: RunOptions): Promise<void>;
 
   /** Fetches information about the given package, usually from NPM. */
   fetchPackageInfo(name: string): Promise<PackageInfo>;
 
-  /** Reads the lockfile from the repo. See {@link Lockfile} */
+  /** Reads the lockfile from the root of the repo. See {@link Lockfile} */
   loadLockfile(): Promise<Lockfile>;
 
   /** Parses the given string as a {@link Lockfile}. */
@@ -72,54 +139,158 @@ export interface PackageManager {
    */
   supportsBackstageVersionProtocol(): Promise<boolean>;
 
+  /**
+   * Returns the command that a user would type in their terminal to run the
+   * given arguments through the package manager, for example `yarn fix`.
+   * Intended for use in messages to the user.
+   */
+  getCommandHint(args: string[]): string;
+
   /** A string representation of the package manager. */
   toString(): string;
 }
 
+const detectedPackageManagers = new Map<string, Promise<PackageManager>>();
+
 /**
- * Uses several mechanisms to detect the currently used package manager. The
- * detection methods are intended to be ordered roughly from fastest to slowest
- * in order to make this method as fast as possible.
+ * Detects the package manager that is used by the target project.
+ *
+ * @remarks
+ *
+ * The package manager is detected from the root of the project, in the
+ * following order:
+ *
+ * 1. The `packageManager` field in the root `package.json`, when it names a
+ *    supported package manager.
+ * 2. A `pnpm-lock.yaml` file: pnpm.
+ * 3. A `yarn.lock` file: Yarn.
+ * 4. A `pnpm-workspace.yaml` file: pnpm.
+ * 5. A `workspaces` field in the root `package.json`: Yarn.
+ * 6. Otherwise Yarn, with a warning.
+ *
+ * A project that declares a package manager is taken at its word, so that a
+ * lockfile left behind by another package manager does not decide which one
+ * the commands use. A project with both lockfiles gets a warning. A project
+ * that declares an unsupported package manager and gives no other signal
+ * fails, rather than having a Yarn lockfile written into it.
+ *
+ * The result is cached per project root.
  *
  * @public
  */
 export async function detectPackageManager(): Promise<PackageManager> {
-  const hasYarnLockfile = await fileExists(
-    targetPaths.resolveRoot('yarn.lock'),
-  );
-  if (hasYarnLockfile) {
-    return await Yarn.create();
+  const rootDir = targetPaths.rootDir;
+
+  let detected = detectedPackageManagers.get(rootDir);
+  if (!detected) {
+    detected = detectPackageManagerInDir(rootDir).catch(error => {
+      detectedPackageManagers.delete(rootDir);
+      throw error;
+    });
+    detectedPackageManagers.set(rootDir, detected);
   }
 
-  try {
-    const packageJson = await fs.readJson(
-      targetPaths.resolveRoot('package.json'),
+  return detected;
+}
+
+/**
+ * Clears the cache of detected package managers. Only intended for tests.
+ *
+ * @internal
+ */
+export function resetDetectedPackageManagers(): void {
+  detectedPackageManagers.clear();
+}
+
+async function detectPackageManagerInDir(
+  rootDir: string,
+): Promise<PackageManager> {
+  const packageJson = await readPackageJson(rootDir);
+
+  const declaredPacman = packageJson?.packageManager;
+  const declaredName =
+    typeof declaredPacman === 'string'
+      ? declaredPacman.split('@')[0]
+      : undefined;
+
+  // What the project declares wins over the files in the root, so that a
+  // lockfile that another package manager left behind does not decide which
+  // package manager the commands use.
+  if (declaredName === 'yarn') {
+    return Yarn.create(rootDir);
+  }
+  if (declaredName === 'pnpm') {
+    return Pnpm.create(rootDir);
+  }
+
+  const unsupported =
+    declaredName === undefined
+      ? undefined
+      : `The packageManager field of the project declares ${declaredName}, which is not supported.`;
+  // An unsupported declaration does not decide anything, but the project
+  // should know that it was ignored.
+  const warnIgnoredDeclaration = () => {
+    if (unsupported) {
+      console.warn(`${unsupported} Detecting from the project files instead.`);
+    }
+  };
+
+  const hasPnpmLockfile = await fileExists(
+    resolvePath(rootDir, 'pnpm-lock.yaml'),
+  );
+  const hasYarnLockfile = await fileExists(resolvePath(rootDir, 'yarn.lock'));
+
+  if (hasPnpmLockfile && hasYarnLockfile) {
+    console.warn(
+      'Both pnpm-lock.yaml and yarn.lock exist in the project root, using pnpm. ' +
+        'Remove the lockfile that the project does not use, or set the ' +
+        'packageManager field of the root package.json.',
     );
-    if (packageJson.workspaces) {
-      // technically this could be NPM as well
-      return await Yarn.create();
-    }
-
-    const declaredPacman = packageJson.packageManager;
-    if (declaredPacman) {
-      const [name, _version] = declaredPacman.split('@');
-      switch (name) {
-        case 'yarn':
-          return await Yarn.create();
-        default:
-          console.log(`Detected unsupported package manager: ${name}.`);
-          return await Yarn.create();
-      }
-    }
-  } catch (error) {
-    console.log(`Error during package manager detection: ${error}`);
   }
 
-  // currently yarn is the only package manager supported so just log an error and use it anyway
-  console.log(
-    'Yarn was not detected, but is the only supported package manager.',
-  );
-  return await Yarn.create();
+  if (hasPnpmLockfile) {
+    warnIgnoredDeclaration();
+    return Pnpm.create(rootDir);
+  }
+
+  if (hasYarnLockfile) {
+    warnIgnoredDeclaration();
+    return Yarn.create(rootDir);
+  }
+
+  if (await fileExists(resolvePath(rootDir, 'pnpm-workspace.yaml'))) {
+    warnIgnoredDeclaration();
+    return Pnpm.create(rootDir);
+  }
+
+  if (packageJson?.workspaces) {
+    // technically this could be NPM as well
+    warnIgnoredDeclaration();
+    return Yarn.create(rootDir);
+  }
+
+  if (unsupported) {
+    // Falling back to Yarn here would write a Yarn lockfile into a project
+    // that picked a different package manager.
+    throw new Error(
+      `${unsupported} Use yarn or pnpm, or remove the field so that the package manager is detected from the project.`,
+    );
+  }
+
+  // Fall back to yarn when no package manager could be detected
+  console.warn('No package manager was detected, falling back to yarn.');
+  return Yarn.create(rootDir);
+}
+
+async function readPackageJson(
+  rootDir: string,
+): Promise<Record<string, unknown> | undefined> {
+  try {
+    return await fs.readJson(resolvePath(rootDir, 'package.json'));
+  } catch (error) {
+    console.warn(`Error during package manager detection: ${error}`);
+    return undefined;
+  }
 }
 
 async function fileExists(filePath: string): Promise<boolean> {

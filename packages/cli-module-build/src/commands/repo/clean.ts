@@ -17,13 +17,16 @@
 import { cli } from 'cleye';
 import fs from 'fs-extra';
 import { resolve as resolvePath } from 'node:path';
-import { PackageGraph } from '@backstage/cli-node';
-import { run, targetPaths } from '@backstage/cli-common';
-import type { CliCommandContext } from '@backstage/cli-node';
+import { detectPackageManager, PackageGraph } from '@backstage/cli-node';
+import { targetPaths } from '@backstage/cli-common';
+import type { CliCommandContext, PackageManager } from '@backstage/cli-node';
 
 export default async ({ args, info }: CliCommandContext) => {
   cli({ name: info.usage, booleanFlagNegation: true }, undefined, args);
   const packages = await PackageGraph.listTargetPackages();
+
+  // Only detected once a package with a custom clean script is encountered
+  let packageManager: Promise<PackageManager> | undefined;
 
   await fs.remove(targetPaths.resolveRoot('dist'));
   await fs.remove(targetPaths.resolveRoot('dist-types'));
@@ -43,9 +46,12 @@ export default async ({ args, info }: CliCommandContext) => {
           await fs.remove(resolvePath(pkg.dir, 'dist-types'));
           await fs.remove(resolvePath(pkg.dir, 'coverage'));
         } else if (cleanScript) {
-          await run(['yarn', 'run', 'clean'], {
+          packageManager ??= detectPackageManager();
+          await (
+            await packageManager
+          ).runScript('clean', [], {
             cwd: pkg.dir,
-          }).waitForExit();
+          });
         }
       }
     }),

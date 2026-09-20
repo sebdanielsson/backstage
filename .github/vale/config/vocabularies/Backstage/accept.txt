@@ -34,6 +34,7 @@ backend's
 backoff
 backported
 backporting
+Bazel
 BEPs
 bg
 bigint
@@ -319,6 +320,7 @@ navbar
 neuro
 newrelic
 nginx
+node_modules
 nodegit
 nodemailer
 nodejs
@@ -480,6 +482,7 @@ sqs
 squidfunk
 src
 statefulsets
+stderr
 stdout
 storable
 storages
@@ -564,6 +567,7 @@ ungrouped
 unicode
 unmanaged
 unmount
+unpatched
 unregister
 unregistering
 unregisters

@@ -26,5 +26,6 @@ export * from './cli-module';
 export * from './concurrency';
 export * from './git';
 export * from './monorepo';
+export * from './pacman';
 export * from './roles';
 export * from './yarn';

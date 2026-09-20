@@ -18,6 +18,13 @@ import { PackageGraph } from '@backstage/cli-node';
 import { findTargetPackages } from './start';
 import { overrideTargetPaths } from '@backstage/cli-common/testUtils';
 
+jest.mock('@backstage/cli-node', () => ({
+  ...jest.requireActual('@backstage/cli-node'),
+  detectPackageManager: jest.fn().mockResolvedValue({
+    getCommandHint: (args: string[]) => ['yarn', ...args].join(' '),
+  }),
+}));
+
 overrideTargetPaths('/root');
 
 const mocks = {

@@ -16,9 +16,7 @@
 
 import { minimatch } from 'minimatch';
 import { getPackages } from '@manypkg/get-packages';
-import { detectYarnVersion } from './yarn';
-import { runOutput } from '@backstage/cli-common';
-import { NotFoundError } from '@backstage/errors';
+import { detectPackageManager, PackageInfo } from '@backstage/cli-node';
 
 const DEP_TYPES = [
   'dependencies',
@@ -28,18 +26,7 @@ const DEP_TYPES = [
 ] as const;
 
 // Package data as returned by `yarn info`
-export type YarnInfoInspectData = {
-  name: string;
-  'dist-tags': Record<string, string>;
-  versions: string[];
-  time: { [version: string]: string };
-};
-
-// Possible `yarn info` output
-type YarnInfo = {
-  type: 'inspect';
-  data: YarnInfoInspectData | { type: string; data: unknown };
-};
+export type YarnInfoInspectData = PackageInfo;
 
 type PkgVersionInfo = {
   range: string;
@@ -50,46 +37,8 @@ type PkgVersionInfo = {
 export async function fetchPackageInfo(
   name: string,
 ): Promise<YarnInfoInspectData> {
-  const yarnVersion = await detectYarnVersion();
-
-  const cmd = yarnVersion === 'classic' ? ['info'] : ['npm', 'info'];
-  try {
-    const output = await runOutput(['yarn', ...cmd, '--json', name]);
-
-    if (!output) {
-      throw new NotFoundError(
-        `No package information found for package ${name}`,
-      );
-    }
-
-    if (yarnVersion === 'berry') {
-      return JSON.parse(output) as YarnInfoInspectData;
-    }
-
-    const info = JSON.parse(output) as YarnInfo;
-    if (info.type !== 'inspect') {
-      throw new Error(`Received unknown yarn info for ${name}, ${output}`);
-    }
-
-    return info.data as YarnInfoInspectData;
-  } catch (error) {
-    if (yarnVersion === 'classic') {
-      throw error;
-    }
-
-    if (
-      error instanceof Error &&
-      'stdout' in error &&
-      typeof error.stdout === 'string' &&
-      error.stdout.includes('Response Code: 404')
-    ) {
-      throw new NotFoundError(
-        `No package information found for package ${name}`,
-      );
-    }
-
-    throw error;
-  }
+  const pm = await detectPackageManager();
+  return pm.fetchPackageInfo(name);
 }
 
 /** Map all dependencies in the repo as dependency => dependents */

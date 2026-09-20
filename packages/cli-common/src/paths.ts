@@ -257,6 +257,10 @@ class TargetPathsImpl implements TargetPaths {
     // Lazy init to only crash commands that require a monorepo when we're not in one
     this.#rootDir =
       findRootPath(dir, path => {
+        // pnpm workspaces are declared in pnpm-workspace.yaml rather than package.json
+        if (fs.existsSync(resolvePath(dirname(path), 'pnpm-workspace.yaml'))) {
+          return true;
+        }
         try {
           const content = fs.readFileSync(path, 'utf8');
           const data = JSON.parse(content);

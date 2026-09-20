@@ -22,6 +22,8 @@ import fs from 'fs-extra';
 import os from 'node:os';
 import { join as joinPath } from 'node:path';
 
+import { parse as parseYaml } from 'yaml';
+
 import { targetPaths } from '@backstage/cli-common';
 import {
   bundleCommand,
@@ -36,6 +38,9 @@ const mockPackToDirectory = jest.fn();
 const mockBuildFrontend = jest.fn();
 const mockRun = jest.fn();
 const mockRunOutput = jest.fn();
+const mockDetectPackageManager = jest.fn();
+const mockInstall = jest.fn();
+const mockPmRun = jest.fn();
 const mockListTargetPackages = jest.fn();
 const mockLoadConfigSchema = jest.fn();
 const mockCreateRequire = jest.fn();
@@ -71,6 +76,8 @@ jest.mock('@backstage/cli-node', () => {
       listTargetPackages: (...args: unknown[]) =>
         mockListTargetPackages(...args),
     }),
+    detectPackageManager: (...args: unknown[]) =>
+      mockDetectPackageManager(...args),
   };
 });
 
@@ -391,17 +398,25 @@ describe('bundle command', () => {
   function setupRunMock() {
     mockRun.mockImplementation(
       (
-        args: string[],
+        _args: string[],
         opts: { cwd: string; onStdout?: (d: Buffer) => void },
       ) => ({
         waitForExit: async () => {
-          if (!args.includes('update-lockfile')) {
-            await fs.ensureDir(joinPath(opts.cwd, 'node_modules'));
-            await fs.ensureDir(joinPath(opts.cwd, '.yarn'));
-          }
           opts.onStdout?.(Buffer.from('mock yarn output\n'));
         },
       }),
+    );
+    mockDetectPackageManager.mockResolvedValue({
+      name: () => 'yarn',
+      lockfileName: () => 'yarn.lock',
+      install: mockInstall,
+    });
+    mockInstall.mockImplementation(
+      async (opts: { cwd: string; onStdout?: (d: Buffer) => void }) => {
+        await fs.ensureDir(joinPath(opts.cwd, 'node_modules'));
+        await fs.ensureDir(joinPath(opts.cwd, '.yarn'));
+        opts.onStdout?.(Buffer.from('mock yarn output\n'));
+      },
     );
   }
 
@@ -440,6 +455,16 @@ describe('bundle command', () => {
   }
 
   describe('validation', () => {
+    it('throws when the project uses an unsupported package manager', async () => {
+      mockDetectPackageManager.mockResolvedValue({ name: () => 'npm' });
+      setupPlugin(backendPluginDir, backendPkg);
+      await expect(bundleCommand(defaultOpts)).rejects.toThrow(
+        'The package bundle command does not support the npm package manager',
+      );
+      expect(mockRun).not.toHaveBeenCalled();
+      expect(mockInstall).not.toHaveBeenCalled();
+    });
+
     it('throws when backstage.role is missing', async () => {
       setupPlugin(backendPluginDir, {
         name: '@scope/plugin-foo-backend',
@@ -728,9 +753,8 @@ describe('bundle command', () => {
           ]),
           expect.objectContaining({ cwd: ctx.targetDir }),
         );
-        expect(mockRun).toHaveBeenCalledWith(
-          expect.arrayContaining(['yarn', 'install', '--immutable']),
-          expect.objectContaining({ cwd: ctx.targetDir }),
+        expect(mockInstall).toHaveBeenCalledWith(
+          expect.objectContaining({ immutable: true, cwd: ctx.targetDir }),
         );
       });
 
@@ -766,10 +790,7 @@ describe('bundle command', () => {
           expect.arrayContaining(['--mode', 'update-lockfile']),
           expect.objectContaining({ cwd: ctx.targetDir }),
         );
-        expect(mockRun).not.toHaveBeenCalledWith(
-          expect.arrayContaining(['--immutable']),
-          expect.objectContaining({ cwd: ctx.targetDir }),
-        );
+        expect(mockInstall).not.toHaveBeenCalled();
         expect(console.log).toHaveBeenCalledWith(
           expect.stringContaining('Skipping dependency installation'),
         );
@@ -830,9 +851,8 @@ describe('bundle command', () => {
       it('should pipe run output to console when verbose=true', async () => {
         await bundleCommand({ ...defaultOpts, verbose: true });
 
-        expect(mockRun).toHaveBeenCalledWith(
-          expect.arrayContaining(['yarn', 'install', '--immutable']),
-          expect.anything(),
+        expect(mockInstall).toHaveBeenCalledWith(
+          expect.objectContaining({ immutable: true, cwd: ctx.targetDir }),
         );
         expect(console.log).toHaveBeenCalledWith(
           expect.stringContaining('mock yarn output'),
@@ -878,20 +898,19 @@ describe('bundle command', () => {
     describe('error handling', () => {
       it('should propagate error and show log when pruneBundleLockfile fails', async () => {
         setupCreateDistWorkspaceMock(ctx.pluginDir);
-        mockRun
-          .mockReturnValueOnce({ waitForExit: () => Promise.resolve() })
-          .mockImplementationOnce((_args: any, opts: any) => ({
-            waitForExit: async () => {
-              (opts?.onStdout ?? opts?.onStderr)?.(
-                Buffer.from('yarn prune output line 1\nline 2\n'),
-              );
-              throw new Error('prune failed');
-            },
-          }));
+        mockRun.mockImplementationOnce((_args: any, opts: any) => ({
+          waitForExit: async () => {
+            (opts?.onStdout ?? opts?.onStderr)?.(
+              Buffer.from('yarn prune output line 1\nline 2\n'),
+            );
+            throw new Error('prune failed');
+          },
+        }));
 
         await expect(bundleCommand(defaultOpts)).rejects.toThrow(
           'prune failed',
         );
+        expect(mockInstall).not.toHaveBeenCalled();
         expect(console.error).toHaveBeenCalledWith(
           expect.stringContaining('Full log available at'),
         );
@@ -900,18 +919,21 @@ describe('bundle command', () => {
         );
       });
 
-      it('should propagate error when installBundleDependencies fails', async () => {
+      it('should propagate error and show log when installBundleDependencies fails', async () => {
         setupCreateDistWorkspaceMock(ctx.pluginDir);
-        let callCount = 0;
-        mockRun.mockImplementation(() => ({
-          waitForExit: () =>
-            ++callCount === 2
-              ? Promise.reject(new Error('install failed'))
-              : Promise.resolve(),
-        }));
+        mockInstall.mockImplementation(async (opts: any) => {
+          opts.onStdout?.(Buffer.from('yarn install output line 1\n'));
+          throw new Error('install failed');
+        });
 
         await expect(bundleCommand(defaultOpts)).rejects.toThrow(
           'install failed',
+        );
+        expect(mockInstall).toHaveBeenCalledWith(
+          expect.objectContaining({ immutable: true, cwd: ctx.targetDir }),
+        );
+        expect(console.error).toHaveBeenCalledWith(
+          expect.stringContaining('Full log available at'),
         );
       });
     });
@@ -959,6 +981,342 @@ describe('bundle command', () => {
         const pkg = await fs.readJson(joinPath(ctx.targetDir, 'package.json'));
         expect(pkg.configSchema).toBeUndefined();
       });
+    });
+  });
+
+  describe('pnpm', () => {
+    const commonRelDir = 'plugins/foo-common';
+    const rootWorkspaceYaml = [
+      'packages:',
+      "  - 'plugins/*'",
+      'nodeLinker: hoisted',
+      'minimumReleaseAge: 0',
+      'minimumReleaseAgeExclude:',
+      "  - '@backstage/*'",
+      'resolutionMode: highest',
+      'storeDir: .pnpm-store',
+      'cacheDir: /var/cache/pnpm',
+      'allowBuilds:',
+      '  esbuild: false',
+      'overrides:',
+      "  some-dep: '1.0.0'",
+      '',
+    ].join('\n');
+
+    function setupPnpmPlugin(options: {
+      workspaceYaml?: string;
+      pluginLockfile?: boolean;
+      rootPackageManager?: string;
+    }) {
+      const pluginDir = joinPath(mockDir.path, backendPluginDir);
+      const targetDir = joinPath(pluginDir, 'bundle');
+      const pkg = {
+        ...backendPkg,
+        dependencies: { '@scope/plugin-foo-common': 'workspace:^' },
+      };
+
+      mockDir.setContent({
+        [joinPath(backendPluginDir, 'package.json')]: JSON.stringify(pkg),
+        ...(options.pluginLockfile
+          ? { [joinPath(backendPluginDir, 'pnpm-lock.yaml')]: '# plugin lock' }
+          : {}),
+        'package.json': JSON.stringify({
+          name: 'root',
+          version: '1.0.0',
+          ...(options.rootPackageManager
+            ? { packageManager: options.rootPackageManager }
+            : {}),
+        }),
+        'pnpm-lock.yaml': '# root lock',
+        ...(options.workspaceYaml
+          ? { 'pnpm-workspace.yaml': options.workspaceYaml }
+          : {}),
+        'tmp/.keep': '',
+      });
+      targetPaths.dir = pluginDir;
+      targetPaths.rootDir = mockDir.path;
+      (targetPaths.resolve as jest.Mock).mockImplementation(
+        (...args: string[]) => joinPath(targetPaths.dir, ...args),
+      );
+
+      mockDetectPackageManager.mockResolvedValue({
+        name: () => 'pnpm',
+        lockfileName: () => 'pnpm-lock.yaml',
+        install: mockInstall,
+        run: mockPmRun,
+      });
+      mockPmRun.mockImplementation(
+        async (_args: string[], opts: { onStdout?: (d: Buffer) => void }) => {
+          opts.onStdout?.(Buffer.from('mock pnpm output\n'));
+        },
+      );
+      mockInstall.mockImplementation(
+        async (opts: { cwd: string; onStdout?: (d: Buffer) => void }) => {
+          await fs.ensureDir(joinPath(opts.cwd, 'node_modules'));
+          opts.onStdout?.(Buffer.from('mock pnpm output\n'));
+        },
+      );
+      setupCreateDistWorkspaceMock(pluginDir, [
+        { name: backendPkg.name, dir: pluginDir },
+        {
+          name: '@scope/plugin-foo-common',
+          dir: joinPath(mockDir.path, commonRelDir),
+        },
+      ]);
+
+      return { pluginDir, targetDir };
+    }
+
+    it('should produce a backend bundle with a pnpm workspace file, pruned lockfile, and offline install', async () => {
+      const ctx = setupPnpmPlugin({
+        workspaceYaml: rootWorkspaceYaml,
+        pluginLockfile: true,
+        rootPackageManager: 'pnpm@12.4.2',
+      });
+
+      await bundleCommand(defaultOpts);
+
+      const workspace = parseYaml(
+        await fs.readFile(
+          joinPath(ctx.targetDir, 'pnpm-workspace.yaml'),
+          'utf8',
+        ),
+      );
+      expect(workspace).toEqual({
+        nodeLinker: 'hoisted',
+        minimumReleaseAge: 0,
+        minimumReleaseAgeExclude: ['@backstage/*'],
+        resolutionMode: 'highest',
+        storeDir: joinPath(mockDir.path, '.pnpm-store'),
+        cacheDir: '/var/cache/pnpm',
+        allowBuilds: { esbuild: false },
+        overrides: {
+          'some-dep': '1.0.0',
+          '@scope/plugin-foo-common': `file:./embedded/${commonRelDir}`,
+        },
+      });
+
+      const pkg = await fs.readJson(joinPath(ctx.targetDir, 'package.json'));
+      expect(pkg.name).toBe(backendPkg.name);
+      expect(pkg.bundleDependencies).toBe(true);
+      expect(pkg.resolutions).toBeUndefined();
+      // The pnpm version pin of the source root is carried into the bundle
+      expect(pkg.packageManager).toBe('pnpm@12.4.2');
+      await expectPathExists(
+        [ctx.targetDir, 'embedded', commonRelDir, 'package.json'],
+        true,
+      );
+      await expectPathExists([ctx.targetDir, '.yarnrc.yml'], false);
+      await expectPathExists([ctx.targetDir, 'yarn.lock'], false);
+      await expectPathExists([ctx.targetDir, 'node_modules'], true);
+
+      expect(
+        await fs.readFile(joinPath(ctx.targetDir, 'pnpm-lock.yaml'), 'utf8'),
+      ).toBe('# plugin lock');
+
+      expect(mockPmRun).toHaveBeenCalledTimes(1);
+      expect(mockPmRun).toHaveBeenCalledWith(
+        ['install', '--lockfile-only', '--no-frozen-lockfile', '--offline'],
+        expect.objectContaining({ cwd: ctx.targetDir }),
+      );
+      expect(mockInstall).toHaveBeenCalledTimes(1);
+      expect(mockInstall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          immutable: true,
+          offline: true,
+          cwd: ctx.targetDir,
+        }),
+      );
+      expect(mockRun).not.toHaveBeenCalled();
+      expect(mockRunOutput).not.toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('pnpm-lock.yaml'),
+      );
+    });
+
+    it('should seed the lockfile from the monorepo root and omit overrides that do not exist', async () => {
+      const ctx = setupPnpmPlugin({
+        workspaceYaml: "packages:\n  - 'plugins/*'\n",
+        pluginLockfile: false,
+      });
+      mockCreateDistWorkspace.mockImplementation(async (_pkgNames, opts) => {
+        await fs.copy(
+          joinPath(fixturesDir, 'dist-workspace', 'backend'),
+          opts.targetDir,
+        );
+        return { targets: [{ name: backendPkg.name, dir: ctx.pluginDir }] };
+      });
+
+      await bundleCommand({ ...defaultOpts, install: false });
+
+      expect(
+        await fs.readFile(joinPath(ctx.targetDir, 'pnpm-lock.yaml'), 'utf8'),
+      ).toBe('# root lock');
+      expect(
+        await fs.readFile(
+          joinPath(ctx.targetDir, 'pnpm-workspace.yaml'),
+          'utf8',
+        ),
+      ).toBe('nodeLinker: hoisted\n');
+      const pkg = await fs.readJson(joinPath(ctx.targetDir, 'package.json'));
+      expect(pkg.resolutions).toBeUndefined();
+      expect(pkg.packageManager).toBeUndefined();
+      expect(mockPmRun).toHaveBeenCalledWith(
+        ['install', '--lockfile-only', '--no-frozen-lockfile', '--offline'],
+        expect.objectContaining({ cwd: ctx.targetDir }),
+      );
+      expect(mockInstall).not.toHaveBeenCalled();
+    });
+
+    it('should carry resolution settings and patch files into the bundle', async () => {
+      const ctx = setupPnpmPlugin({
+        workspaceYaml: [
+          'packages:',
+          "  - 'plugins/*'",
+          'packageExtensions:',
+          '  some-dep:',
+          '    dependencies:',
+          "      leven: '3.1.0'",
+          'patchedDependencies:',
+          '  some-dep: patches/some-dep.patch',
+          'supportedArchitectures:',
+          '  os:',
+          '    - linux',
+          'shamefullyHoist: true',
+          'strictDepBuilds: true',
+          '',
+        ].join('\n'),
+        pluginLockfile: true,
+      });
+      await fs.outputFile(
+        joinPath(mockDir.path, 'patches', 'some-dep.patch'),
+        '--- patch contents',
+      );
+
+      await bundleCommand({ ...defaultOpts, install: false });
+
+      const workspace = parseYaml(
+        await fs.readFile(
+          joinPath(ctx.targetDir, 'pnpm-workspace.yaml'),
+          'utf8',
+        ),
+      );
+      // Settings that change what the seeded lockfile resolves to are copied,
+      // and the patch file comes along with the setting that names it
+      expect(workspace.packageExtensions).toEqual({
+        'some-dep': { dependencies: { leven: '3.1.0' } },
+      });
+      expect(workspace.supportedArchitectures).toEqual({ os: ['linux'] });
+      expect(workspace.patchedDependencies).toEqual({
+        'some-dep': 'patches/some-dep.patch',
+      });
+      expect(
+        await fs.readFile(
+          joinPath(ctx.targetDir, 'patches', 'some-dep.patch'),
+          'utf8',
+        ),
+      ).toBe('--- patch contents');
+      // The workspace layout of the project is not carried, and neither is
+      // the linker, which the bundle picks itself
+      expect(workspace.packages).toBeUndefined();
+      expect(workspace.shamefullyHoist).toBeUndefined();
+      expect(workspace.nodeLinker).toBe('hoisted');
+      // A setting that is neither carried nor known to be irrelevant is named
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('strictDepBuilds'),
+      );
+    });
+
+    it('should warn and leave the bundle unpatched when a patch file is missing', async () => {
+      const ctx = setupPnpmPlugin({
+        workspaceYaml: [
+          'packages:',
+          "  - 'plugins/*'",
+          'patchedDependencies:',
+          '  some-dep: patches/gone.patch',
+          '',
+        ].join('\n'),
+        pluginLockfile: true,
+      });
+
+      await bundleCommand({ ...defaultOpts, install: false });
+
+      const workspace = parseYaml(
+        await fs.readFile(
+          joinPath(ctx.targetDir, 'pnpm-workspace.yaml'),
+          'utf8',
+        ),
+      );
+      expect(workspace.patchedDependencies).toBeUndefined();
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('The patch file for'),
+      );
+    });
+
+    it('should retry with --prefer-offline when the pnpm cache is missing offline data', async () => {
+      const ctx = setupPnpmPlugin({
+        workspaceYaml: rootWorkspaceYaml,
+        pluginLockfile: true,
+      });
+      mockPmRun.mockImplementationOnce(
+        async (_args: string[], opts: { onStderr?: (d: Buffer) => void }) => {
+          opts.onStderr?.(
+            Buffer.from('ERR_PNPM_NO_OFFLINE_META: Failed to resolve x\n'),
+          );
+          throw new Error('prune failed');
+        },
+      );
+      mockInstall.mockImplementationOnce(
+        async (opts: { onStderr?: (d: Buffer) => void }) => {
+          opts.onStderr?.(
+            Buffer.from('ERR_PNPM_NO_OFFLINE_TARBALL: x is not in the store\n'),
+          );
+          throw new Error('install failed');
+        },
+      );
+
+      await bundleCommand(defaultOpts);
+
+      expect(mockPmRun.mock.calls.map(([args]) => args)).toEqual([
+        ['install', '--lockfile-only', '--no-frozen-lockfile', '--offline'],
+        [
+          'install',
+          '--lockfile-only',
+          '--no-frozen-lockfile',
+          '--prefer-offline',
+        ],
+        ['install', '--frozen-lockfile', '--prefer-offline'],
+      ]);
+      expect(mockInstall).toHaveBeenCalledTimes(1);
+      expect(console.warn).toHaveBeenCalledTimes(2);
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining('--prefer-offline'),
+      );
+      expect(console.error).not.toHaveBeenCalled();
+      await expectPathExists([ctx.targetDir, 'lockfile-prune.log'], false);
+      await expectPathExists([ctx.targetDir, 'pnpm-install.log'], false);
+    });
+
+    it('should propagate other prune failures without retrying', async () => {
+      const ctx = setupPnpmPlugin({
+        workspaceYaml: rootWorkspaceYaml,
+        pluginLockfile: true,
+      });
+      mockPmRun.mockImplementationOnce(
+        async (_args: string[], opts: { onStderr?: (d: Buffer) => void }) => {
+          opts.onStderr?.(Buffer.from('ERR_PNPM_LOCKFILE_BREAKING_CHANGE\n'));
+          throw new Error('prune failed');
+        },
+      );
+
+      await expect(bundleCommand(defaultOpts)).rejects.toThrow('prune failed');
+
+      expect(mockPmRun).toHaveBeenCalledTimes(1);
+      expect(mockInstall).not.toHaveBeenCalled();
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Full log available at'),
+      );
+      await expectPathExists([ctx.targetDir, 'lockfile-prune.log'], true);
     });
   });
 
@@ -1097,10 +1455,7 @@ describe('bundle command', () => {
           expect.arrayContaining(['--mode', 'update-lockfile']),
           expect.objectContaining({ cwd: ctx.targetDir }),
         );
-        expect(mockRun).not.toHaveBeenCalledWith(
-          expect.arrayContaining(['--immutable']),
-          expect.objectContaining({ cwd: ctx.targetDir }),
-        );
+        expect(mockInstall).not.toHaveBeenCalled();
       });
     });
 
