@@ -15,6 +15,7 @@
  */
 
 import { Yarn } from './yarn';
+import { Pnpm } from './pnpm';
 import { Lockfile } from './Lockfile';
 import { targetPaths } from '@backstage/cli-common';
 import { RunOnOutput, RunOptions } from '@backstage/cli-common';
@@ -212,7 +213,7 @@ async function detectPackageManagerInDir(
     return Yarn.create(rootDir);
   }
   if (declaredName === 'pnpm') {
-    return createPnpm(rootDir);
+    return Pnpm.create(rootDir);
   }
 
   const unsupported =
@@ -242,7 +243,7 @@ async function detectPackageManagerInDir(
 
   if (hasPnpmLockfile) {
     warnIgnoredDeclaration();
-    return createPnpm(rootDir);
+    return Pnpm.create(rootDir);
   }
 
   if (hasYarnLockfile) {
@@ -252,7 +253,7 @@ async function detectPackageManagerInDir(
 
   if (await fileExists(resolvePath(rootDir, 'pnpm-workspace.yaml'))) {
     warnIgnoredDeclaration();
-    return createPnpm(rootDir);
+    return Pnpm.create(rootDir);
   }
 
   if (packageJson?.workspaces) {
@@ -269,16 +270,8 @@ async function detectPackageManagerInDir(
     );
   }
 
-  // currently yarn is the only package manager supported so just log an error and use it anyway
-  console.warn(
-    'Yarn was not detected, but is the only supported package manager.',
-  );
-  return Yarn.create(rootDir);
-}
-
-// pnpm is not supported yet, so any detection of it falls back to yarn
-async function createPnpm(rootDir: string): Promise<PackageManager> {
-  console.warn('Detected unsupported package manager: pnpm.');
+  // Fall back to yarn when no package manager could be detected
+  console.warn('No package manager was detected, falling back to yarn.');
   return Yarn.create(rootDir);
 }
 

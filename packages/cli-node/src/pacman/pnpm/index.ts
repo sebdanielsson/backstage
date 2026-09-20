@@ -1,5 +1,5 @@
 /*
- * Copyright 2024 The Backstage Authors
+ * Copyright 2026 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,5 @@
  * limitations under the License.
  */
 
-export {
-  detectPackageManager,
-  type PackageManager,
-  type PackageManagerInstallOptions,
-  type PackageInfo,
-} from './PackageManager';
-export type {
-  Lockfile,
-  LockfileEntry,
-  LockfileDiff,
-  LockfileDiffEntry,
-} from './Lockfile';
-export { Yarn, YarnLockfile, type LockfileQueryEntry } from './yarn';
-export { Pnpm, PnpmLockfile, type PnpmLockfileParseOptions } from './pnpm';
+export { Pnpm } from './Pnpm';
+export { PnpmLockfile, type PnpmLockfileParseOptions } from './PnpmLockfile';
