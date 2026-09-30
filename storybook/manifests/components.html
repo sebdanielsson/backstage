@@ -588,13 +588,13 @@
 <header>
   <div class="wrap">
     <h1>Manifest Debugger</h1>
-    <div class="summary"><a class="filter-pill all" data-k="all" href="#filter-all">All</a><span class="filter-pill ok" aria-disabled="true">52 components ok</span><span class="filter-pill ok" aria-disabled="true">505 stories ok</span></div>
+    <div class="summary"><a class="filter-pill all" data-k="all" href="#filter-all">All</a><span class="filter-pill ok" aria-disabled="true">54 components ok</span><a class="filter-pill info" data-k="infos" href="#filter-infos">2/54 infos</a><span class="filter-pill ok" aria-disabled="true">549 stories ok</span></div>
   </div>
 </header>
 <main>
   <div class="wrap">
     <div class="note info" style="margin-bottom: 16px;">
-            <strong>Tip:</strong> You are using <code>react-docgen</code> (the default). Generation took <strong>3.5s</strong>. For higher quality prop types, consider switching to <code>react-docgen-typescript</code> in your <code>main.ts</code>:
+            <strong>Tip:</strong> You are using <code>react-docgen</code> (the default). Generation took <strong>3.4s</strong>. For higher quality prop types, consider switching to <code>react-docgen-typescript</code> in your <code>main.ts</code>:
             <pre><code>typescript: {
   reactDocgen: 'react-docgen-typescript',
 }</code></pre>
@@ -4267,7 +4267,7 @@ secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]</code></pre>
 <article
   class="card 
   no-error 
-  no-info 
+  has-info 
   no-story-error
   no-doc-error"
   role="listitem"
@@ -4276,72 +4276,38 @@ secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Combobox</h2>
       <div class="badges">
-        <label for="c-13-backstage-ui-combobox-props" class="badge ok as-toggle">9 prop types</label>
         
-        <label for="c-13-backstage-ui-combobox-stories" class="badge ok as-toggle">18 stories</label>
+        <label for="c-13-backstage-ui-combobox-info" class="badge info as-toggle">1 info</label>
+        <label for="c-13-backstage-ui-combobox-stories" class="badge ok as-toggle">23 stories</label>
         
         
       </div>
     </div>
     <div class="meta" title="./packages/ui/src/components/Combobox/Combobox.stories.tsx">backstage-ui-combobox · ./packages/ui/src/components/Combobox/Combobox.stories.tsx</div>
     
-    <div class="hint">A text input combined with a dropdown list of options. The user can type to filter suggestions, navigate with the keyboard, and pick a value. With `allowsCustomValue` the typed text can be committed even if no option matches.</div>
+    
     <div class="kv"><span class="chip">public:  </span></div>
   </div>
 
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
-  
+  <input id="c-13-backstage-ui-combobox-info" class="tg tg-info" type="checkbox" hidden />
   <input id="c-13-backstage-ui-combobox-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-13-backstage-ui-combobox-props" class="tg tg-props" type="checkbox" hidden />
+  
 
   <div class="panels">
     
     
-    
-        <div class="panel panel-props">
-          <div class="note ok">
-            <div class="row">
-              <span class="ex-name">Prop types <small>(react-docgen)</small></span>
-              <span class="badge ok">9 prop types</span>
-            </div>
-            <pre><code>Component: packages/ui/src/components/Combobox/Combobox.tsx::Combobox</code></pre>
-            <pre><code>Props:</code></pre>
-            <pre><code>className?: string
-
-description?: FieldLabelProps[&#39;description&#39;]
-
-/**
- * An icon to render before the input
- */
-icon?: ReactNode
-
-isRequired?: boolean
-
-label?: FieldLabelProps[&#39;label&#39;]
-
-/**
- * The options of the combobox field. Pass flat options, option sections for
- * grouped display, or a mix of both in the same array.
- */
-options?: Array&lt;Option | OptionSection&gt;
-
-/**
- * Placeholder text for the input.
- */
-placeholder?: string
-
-secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]
-
-/**
- * The size of the combobox field
- * @defaultValue &#39;small&#39;
- */
-size?: &#39;small&#39; | &#39;medium&#39; | Partial&lt;Record&lt;Breakpoint, &#39;small&#39; | &#39;medium&#39;&gt;&gt;</code></pre>
-          </div>
+        <div class="panel panel-info">
+          
+    <div class="note info">
+      <div class="note-title">Info</div>
+      <div class="note-body">No description found. Write a jsdoc comment such as /** Component description */.</div>
+    </div>
         </div>
+    
     
         <div class="panel panel-stories">
           
@@ -4351,9 +4317,17 @@ size?: &#39;small&#39; | &#39;medium&#39; | Partial&lt;Record&lt;Breakpoint, &#3
                 <div class="row">
                   <span class="ex-name">Imports</span>
                 </div>
-                <pre><code>import { Box, Combobox, Flex, Text } from "@backstage/ui";
+                <pre><code>import {
+    Box,
+    Combobox,
+    ComboboxItem,
+    ComboboxItemProfile,
+    ComboboxItemText,
+    Flex,
+    Text,
+} from "@backstage/ui";
 import { Form } from "react-aria-components";
-import { RiCloudLine } from "@remixicon/react";</code></pre>
+import { RiCheckLine, RiCloudLine } from "@remixicon/react";</code></pre>
               </div>
           
           
@@ -4370,6 +4344,21 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
     options={fontOptions}
     placeholder=&quot;Pick a font&quot;
     name=&quot;font&quot; /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Client Search</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithClientSearch = () =&gt; &lt;Combobox
+    style={{ width: 300 }}
+    label=&quot;Country&quot;
+    options={countries}
+    placeholder=&quot;Search countries&quot;
+    search
+    name=&quot;country&quot; /&gt;;</code></pre>
             </div>
             <div class="note ok">
               <div class="row">
@@ -4408,6 +4397,51 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
     placeholder=&quot;Type any country&quot;
     allowsCustomValue
     name=&quot;country&quot; /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Item Types</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ItemTypes = () =&gt; (
+  &lt;Flex align=&quot;start&quot; gap=&quot;6&quot;&gt;
+    &lt;ComboboxItemTypesColumn size=&quot;small&quot; /&gt;
+    &lt;ComboboxItemTypesColumn size=&quot;medium&quot; /&gt;
+  &lt;/Flex&gt;
+);</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Profiles</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithProfiles = () =&gt; (
+  &lt;Combobox label=&quot;Owner&quot; placeholder=&quot;Select an owner&quot; items={owners}&gt;
+    {owner =&gt; &lt;ComboboxItemProfile name={owner.name} src={owner.src} /&gt;}
+  &lt;/Combobox&gt;
+);</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Server Backed Options</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ServerBackedOptions = () =&gt; &lt;ServerBackedCombobox /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Server Backed Custom Items</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ServerBackedCustomItems = () =&gt; &lt;ServerBackedCustomCombobox /&gt;;</code></pre>
             </div>
             <div class="note ok">
               <div class="row">
@@ -4518,17 +4552,17 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
     label=&quot;Document Template&quot;
     options={[
       {
-        value: &#39;annual-report-2024&#39;,
+        id: &#39;annual-report-2024&#39;,
         label:
           &#39;Annual Financial Report and Strategic Planning Document for Fiscal Year 2024 with Comprehensive Analysis of Market Trends, Competitive Landscape, Financial Performance Metrics, Revenue Projections, Cost Optimization Strategies, Risk Assessment, and Long-term Growth Initiatives Across All Business Units and Geographical Regions&#39;,
       },
       {
-        value: &#39;product-roadmap&#39;,
+        id: &#39;product-roadmap&#39;,
         label:
           &#39;Comprehensive Product Development Roadmap and Feature Implementation Timeline Including Detailed Technical Specifications, Resource Allocation Plans, Cross-functional Team Dependencies, Milestone Tracking, Quality Assurance Procedures, User Acceptance Testing Protocols, and Post-launch Support Strategy for All Product Lines and Service Offerings&#39;,
       },
       {
-        value: &#39;user-guide&#39;,
+        id: &#39;user-guide&#39;,
         label:
           &#39;Detailed User Guide and Technical Documentation for Advanced System Features Covering Installation Procedures, Configuration Settings, Security Protocols, Troubleshooting Guidelines, Best Practices, Common Use Cases, Performance Optimization Tips, Integration Methods, API Documentation, and Frequently Asked Questions with Step-by-Step Solutions&#39;,
       },
@@ -5866,7 +5900,7 @@ import { Fragment } from "react";</code></pre>
           style={{
             background:
               item.lifecycle === &#39;experimental&#39;
-                ? &#39;var(--bui-bg-warning)&#39;
+                ? &#39;var(--bui-warning-bg-subdued)&#39;
                 : undefined,
             borderLeft:
               item.lifecycle === &#39;experimental&#39;
@@ -9322,7 +9356,7 @@ import {
       &lt;Menu items={pokemon} virtualized&gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuItem&gt;
         ))}
       &lt;/Menu&gt;
@@ -9359,7 +9393,7 @@ import {
       &lt;Menu items={pokemon} virtualized maxHeight=&quot;300px&quot;&gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuItem&gt;
         ))}
       &lt;/Menu&gt;
@@ -9540,7 +9574,7 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
       &gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuItem&gt;
         ))}
       &lt;/MenuAutocomplete&gt;
@@ -9582,7 +9616,7 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
       &gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuItem&gt;
         ))}
       &lt;/MenuAutocomplete&gt;
@@ -9854,7 +9888,7 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
       &gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuListBoxItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuListBoxItem&gt;
         ))}
       &lt;/MenuAutocompleteListbox&gt;
@@ -9896,7 +9930,7 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
       &gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuListBoxItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuListBoxItem&gt;
         ))}
       &lt;/MenuAutocompleteListbox&gt;
@@ -10045,7 +10079,7 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
       &lt;MenuListBox items={pokemon} virtualized&gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuListBoxItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuListBoxItem&gt;
         ))}
       &lt;/MenuListBox&gt;
@@ -10082,7 +10116,7 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
       &lt;MenuListBox items={pokemon} virtualized maxHeight=&quot;300px&quot;&gt;
         {pokemon.map((p, index) =&gt; (
           &lt;MenuListBoxItem key={index} id={p.name}&gt;
-            {p.name.charAt(0).toLocaleUpperCase(&#39;en-US&#39;) + p.name.slice(1)}
+            {p.name.charAt(0).toUpperCase() + p.name.slice(1)}
           &lt;/MenuListBoxItem&gt;
         ))}
       &lt;/MenuListBox&gt;
@@ -10102,14 +10136,318 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
   no-story-error
   no-doc-error"
   role="listitem"
+  aria-label="NumberField">
+  <div class="head">
+    <div class="title">
+      <h2><span class="status-dot dot-ok"></span> NumberField</h2>
+      <div class="badges">
+        <label for="c-30-backstage-ui-numberfield-props" class="badge ok as-toggle">7 prop types</label>
+        
+        <label for="c-30-backstage-ui-numberfield-stories" class="badge ok as-toggle">15 stories</label>
+        
+        
+      </div>
+    </div>
+    <div class="meta" title="./packages/ui/src/components/NumberField/NumberField.stories.tsx">backstage-ui-numberfield · ./packages/ui/src/components/NumberField/NumberField.stories.tsx</div>
+    
+    <div class="hint">A numeric input with an integrated label, optional icon, and inline error display.</div>
+    <div class="kv"><span class="chip">public:  </span></div>
+  </div>
+
+  <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
+  
+  
+  <input id="c-30-backstage-ui-numberfield-stories" class="tg tg-stories" type="checkbox" hidden />
+  
+  
+  <input id="c-30-backstage-ui-numberfield-props" class="tg tg-props" type="checkbox" hidden />
+
+  <div class="panels">
+    
+    
+    
+        <div class="panel panel-props">
+          <div class="note ok">
+            <div class="row">
+              <span class="ex-name">Prop types <small>(react-docgen)</small></span>
+              <span class="badge ok">7 prop types</span>
+            </div>
+            <pre><code>Component: packages/ui/src/components/NumberField/NumberField.tsx::NumberField</code></pre>
+            <pre><code>Props:</code></pre>
+            <pre><code>className?: string
+
+description?: FieldLabelProps[&#39;description&#39;]
+
+/**
+ * An icon to render before the input
+ */
+icon?: ReactNode
+
+label?: FieldLabelProps[&#39;label&#39;]
+
+/**
+ * Text to display in the input when it has no value
+ */
+placeholder?: string
+
+secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]
+
+/**
+ * The size of the number field
+ * @defaultValue &#39;small&#39;
+ */
+size?: &#39;small&#39; | &#39;medium&#39; | Partial&lt;Record&lt;Breakpoint, &#39;small&#39; | &#39;medium&#39;&gt;&gt;</code></pre>
+          </div>
+        </div>
+    
+        <div class="panel panel-stories">
+          
+          
+          
+          <div class="note ok">
+                <div class="row">
+                  <span class="ex-name">Imports</span>
+                </div>
+                <pre><code>import { Box, FieldLabel, Flex, NumberField, Text } from "@backstage/ui";
+import { Form } from "react-aria-components";
+import { RiSparklingLine, RiTimeLine } from "@remixicon/react";</code></pre>
+              </div>
+          
+          
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Default</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Default = () =&gt; &lt;NumberField
+    name=&quot;quantity&quot;
+    placeholder=&quot;Enter a number&quot;
+    style={{
+      maxWidth: &#39;300px&#39;,
+    }} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Sizes</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Sizes = () =&gt; &lt;Flex direction=&quot;row&quot; gap=&quot;4&quot; style={{ width: &#39;100%&#39;, maxWidth: &#39;600px&#39; }}&gt;
+    &lt;NumberField size=&quot;small&quot; icon={&lt;RiSparklingLine /&gt;} /&gt;
+    &lt;NumberField size=&quot;medium&quot; icon={&lt;RiSparklingLine /&gt;} /&gt;
+&lt;/Flex&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Default Value</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const DefaultValue = () =&gt; &lt;NumberField defaultValue={42} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Label</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithLabel = () =&gt; &lt;NumberField label=&quot;Label&quot; /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Description</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithDescription = () =&gt; &lt;NumberField description=&quot;Description&quot; /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Required</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Required = () =&gt; &lt;NumberField isRequired /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Disabled</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Disabled = () =&gt; &lt;NumberField isDisabled /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Icon</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithIcon = () =&gt; &lt;NumberField size=&quot;small&quot; icon={&lt;RiTimeLine /&gt;} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Disabled With Icon</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const DisabledWithIcon = () =&gt; &lt;NumberField isDisabled /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Show Error</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ShowError = () =&gt; &lt;Form validationErrors={{ quantity: &#39;Value is out of range&#39; }}&gt;
+    &lt;NumberField /&gt;
+&lt;/Form&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Validation</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Validation = () =&gt; &lt;NumberField validate={(value: number) =&gt; (value &lt; 0 ? &#39;Must be positive&#39; : null)} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Min Max Step</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const MinMaxStep = () =&gt; &lt;NumberField
+    label=&quot;Minutes&quot;
+    minValue={0}
+    maxValue={59}
+    step={1}
+    icon={&lt;RiTimeLine /&gt;}
+    style={{ maxWidth: &#39;200px&#39; }} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Custom Field</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const CustomField = () =&gt; (
+  &lt;&gt;
+    &lt;FieldLabel
+      htmlFor=&quot;custom-field&quot;
+      id=&quot;custom-field-label&quot;
+      label=&quot;Custom Field&quot;
+    /&gt;
+    &lt;NumberField
+      id=&quot;custom-field&quot;
+      aria-labelledby=&quot;custom-field-label&quot;
+      name=&quot;custom-field&quot;
+      defaultValue={10}
+    /&gt;
+  &lt;/&gt;
+);</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Step Increment</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const StepIncrement = () =&gt; &lt;NumberField
+    label=&quot;Quantity&quot;
+    defaultValue={5}
+    minValue={0}
+    maxValue={20}
+    step={5}
+    style={{ maxWidth: &#39;200px&#39; }} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Auto Bg</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const AutoBg = () =&gt; (
+  &lt;Flex direction=&quot;column&quot; gap=&quot;4&quot;&gt;
+    &lt;div style={{ maxWidth: &#39;600px&#39; }}&gt;
+      NumberField automatically detects its parent bg context and increments
+      the neutral level by 1. No prop is needed — it&#39;s fully automatic.
+    &lt;/div&gt;
+    &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot;&gt;
+      &lt;Text&gt;Neutral 1 container&lt;/Text&gt;
+      &lt;Flex mt=&quot;2&quot; style={{ maxWidth: &#39;300px&#39; }}&gt;
+        &lt;NumberField
+          aria-label=&quot;Number&quot;
+          placeholder=&quot;Enter number&quot;
+          size=&quot;small&quot;
+        /&gt;
+      &lt;/Flex&gt;
+    &lt;/Box&gt;
+    &lt;Box bg=&quot;neutral&quot;&gt;
+      &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot;&gt;
+        &lt;Text&gt;Neutral 2 container&lt;/Text&gt;
+        &lt;Flex mt=&quot;2&quot; style={{ maxWidth: &#39;300px&#39; }}&gt;
+          &lt;NumberField
+            aria-label=&quot;Number&quot;
+            placeholder=&quot;Enter number&quot;
+            size=&quot;small&quot;
+          /&gt;
+        &lt;/Flex&gt;
+      &lt;/Box&gt;
+    &lt;/Box&gt;
+    &lt;Box bg=&quot;neutral&quot;&gt;
+      &lt;Box bg=&quot;neutral&quot;&gt;
+        &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot;&gt;
+          &lt;Text&gt;Neutral 3 container&lt;/Text&gt;
+          &lt;Flex mt=&quot;2&quot; style={{ maxWidth: &#39;300px&#39; }}&gt;
+            &lt;NumberField
+              aria-label=&quot;Number&quot;
+              placeholder=&quot;Enter number&quot;
+              size=&quot;small&quot;
+            /&gt;
+          &lt;/Flex&gt;
+        &lt;/Box&gt;
+      &lt;/Box&gt;
+    &lt;/Box&gt;
+  &lt;/Flex&gt;
+);</code></pre>
+            </div>
+        </div>
+    
+    
+  </div>
+</article>
+<article
+  class="card 
+  no-error 
+  no-info 
+  no-story-error
+  no-doc-error"
+  role="listitem"
   aria-label="PasswordField">
   <div class="head">
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> PasswordField</h2>
       <div class="badges">
-        <label for="c-30-backstage-ui-passwordfield-props" class="badge ok as-toggle">7 prop types</label>
+        <label for="c-31-backstage-ui-passwordfield-props" class="badge ok as-toggle">7 prop types</label>
         
-        <label for="c-30-backstage-ui-passwordfield-stories" class="badge ok as-toggle">12 stories</label>
+        <label for="c-31-backstage-ui-passwordfield-stories" class="badge ok as-toggle">12 stories</label>
         
         
       </div>
@@ -10123,10 +10461,10 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-30-backstage-ui-passwordfield-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-31-backstage-ui-passwordfield-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-30-backstage-ui-passwordfield-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-31-backstage-ui-passwordfield-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -10329,9 +10667,9 @@ import { RiSparklingLine } from "@remixicon/react";</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> PluginHeader</h2>
       <div class="badges">
-        <label for="c-31-backstage-ui-pluginheader-props" class="badge ok as-toggle">7 prop types</label>
+        <label for="c-32-backstage-ui-pluginheader-props" class="badge ok as-toggle">8 prop types</label>
         
-        <label for="c-31-backstage-ui-pluginheader-stories" class="badge ok as-toggle">10 stories</label>
+        <label for="c-32-backstage-ui-pluginheader-stories" class="badge ok as-toggle">16 stories</label>
         
         
       </div>
@@ -10345,10 +10683,10 @@ import { RiSparklingLine } from "@remixicon/react";</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-31-backstage-ui-pluginheader-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-32-backstage-ui-pluginheader-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-31-backstage-ui-pluginheader-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-32-backstage-ui-pluginheader-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -10358,11 +10696,13 @@ import { RiSparklingLine } from "@remixicon/react";</code></pre>
           <div class="note ok">
             <div class="row">
               <span class="ex-name">Prop types <small>(react-docgen)</small></span>
-              <span class="badge ok">7 prop types</span>
+              <span class="badge ok">8 prop types</span>
             </div>
             <pre><code>Component: packages/ui/src/components/PluginHeader/PluginHeader.tsx::PluginHeader</code></pre>
             <pre><code>Props:</code></pre>
-            <pre><code>className?: string
+            <pre><code>breadcrumbs?: PluginHeaderBreadcrumbEntry[]
+
+className?: string
 
 customActions?: React.ReactNode
 
@@ -10679,6 +11019,135 @@ import { RiCloudy2Line, RiEmotionHappyLine, RiHeartLine, RiMore2Line } from "@re
     &lt;/BUIProvider&gt;
 &lt;/MemoryRouter&gt;;</code></pre>
             </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Breadcrumbs</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithBreadcrumbs = () =&gt; &lt;PluginHeader
+    title=&quot;Service Details&quot;
+    breadcrumbs={[
+      { label: &#39;Home&#39;, href: &#39;/&#39; },
+      { label: &#39;Services&#39;, href: &#39;/services&#39; },
+      { label: &#39;my-service&#39;, href: &#39;/services/my-service&#39; },
+    ]} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Breadcrumbs With Long Segments</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithBreadcrumbsWithLongSegments = () =&gt; &lt;PluginHeader
+    title=&quot;Service Details&quot;
+    breadcrumbs={[
+      { label: &#39;Home&#39;, href: &#39;/&#39; },
+      { label: &#39;Services&#39;, href: &#39;/services&#39; },
+      {
+        label: &#39;Page with a very long title that should truncate&#39;,
+        href: &#39;/services/long&#39;,
+      },
+      {
+        label: &#39;Service Details&#39;,
+        href: &#39;/services/long/another&#39;,
+      },
+    ]} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Breadcrumbs With More Than Five Segments</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithBreadcrumbsWithMoreThanFiveSegments = () =&gt; &lt;PluginHeader
+    title=&quot;Introduction&quot;
+    breadcrumbs={[
+      { label: &#39;Home&#39;, href: &#39;/&#39; },
+      { label: &#39;Docs&#39;, href: &#39;/docs&#39; },
+      { label: &#39;Guides&#39;, href: &#39;/docs/guides&#39; },
+      { label: &#39;Setup&#39;, href: &#39;/docs/guides/setup&#39; },
+      { label: &#39;Introduction&#39;, href: &#39;/docs/guides/setup/introduction&#39; },
+    ]} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Breadcrumbs And Tabs</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithBreadcrumbsAndTabs = () =&gt; &lt;PluginHeader
+    title=&quot;Service Details&quot;
+    breadcrumbs={[
+      { label: &#39;Home&#39;, href: &#39;/&#39; },
+      { label: &#39;Services&#39;, href: &#39;/services&#39; },
+      { label: &#39;my-service&#39;, href: &#39;/services/my-service&#39; },
+    ]}
+    tabs={tabs} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Breadcrumbs And Custom Actions</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithBreadcrumbsAndCustomActions = () =&gt; &lt;PluginHeader
+    title=&quot;Service Details&quot;
+    breadcrumbs={[
+      { label: &#39;Home&#39;, href: &#39;/&#39; },
+      { label: &#39;Services&#39;, href: &#39;/services&#39; },
+      { label: &#39;my-service&#39;, href: &#39;/services/my-service&#39; },
+    ]}
+    customActions={
+      &lt;&gt;
+        &lt;ButtonIcon variant=&quot;secondary&quot; icon={&lt;RiHeartLine /&gt;} /&gt;
+        &lt;MenuTrigger&gt;
+          &lt;ButtonIcon variant=&quot;secondary&quot; icon={&lt;RiMore2Line /&gt;} /&gt;
+          &lt;Menu placement=&quot;bottom end&quot;&gt;
+            {menuItems.map(option =&gt; (
+              &lt;MenuItem
+                key={option.value}
+                onAction={option.onClick}
+                href={option.href}
+              &gt;
+                {option.label}
+              &lt;/MenuItem&gt;
+            ))}
+          &lt;/Menu&gt;
+        &lt;/MenuTrigger&gt;
+      &lt;/&gt;
+    } /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Breadcrumbs And All Options</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithBreadcrumbsAndAllOptions = () =&gt; &lt;PluginHeader
+    tabs={tabs}
+    breadcrumbs={[
+      { label: &#39;Home&#39;, href: &#39;/&#39; },
+      { label: &#39;Docs&#39;, href: &#39;/docs&#39; },
+      { label: &#39;Guides&#39;, href: &#39;/docs/guides&#39; },
+      {
+        label:
+          &#39;Setup page with a very long title that should truncate at some point&#39;,
+        href: &#39;/docs/guides/setup&#39;,
+      },
+      {
+        label:
+          &#39;Introduction with a very long title that should truncate at some point&#39;,
+        href: &#39;/docs/guides/setup/introduction&#39;,
+      },
+    ]} /&gt;;</code></pre>
+            </div>
         </div>
     
     
@@ -10696,9 +11165,9 @@ import { RiCloudy2Line, RiEmotionHappyLine, RiHeartLine, RiMore2Line } from "@re
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> PluginHeaderandHeader</h2>
       <div class="badges">
-        <label for="c-32-recipes-pluginheader-and-header-props" class="badge ok as-toggle">10 prop types</label>
+        <label for="c-33-recipes-pluginheader-and-header-props" class="badge ok as-toggle">10 prop types</label>
         
-        <label for="c-32-recipes-pluginheader-and-header-stories" class="badge ok as-toggle">9 stories</label>
+        <label for="c-33-recipes-pluginheader-and-header-stories" class="badge ok as-toggle">9 stories</label>
         
         
       </div>
@@ -10712,10 +11181,10 @@ import { RiCloudy2Line, RiEmotionHappyLine, RiHeartLine, RiMore2Line } from "@re
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-32-recipes-pluginheader-and-header-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-33-recipes-pluginheader-and-header-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-32-recipes-pluginheader-and-header-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-33-recipes-pluginheader-and-header-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -11130,9 +11599,9 @@ import {
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Popover</h2>
       <div class="badges">
-        <label for="c-33-backstage-ui-popover-props" class="badge ok as-toggle">3 prop types</label>
+        <label for="c-34-backstage-ui-popover-props" class="badge ok as-toggle">3 prop types</label>
         
-        <label for="c-33-backstage-ui-popover-stories" class="badge ok as-toggle">13 stories</label>
+        <label for="c-34-backstage-ui-popover-stories" class="badge ok as-toggle">13 stories</label>
         
         
       </div>
@@ -11146,10 +11615,10 @@ import {
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-33-backstage-ui-popover-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-34-backstage-ui-popover-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-33-backstage-ui-popover-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-34-backstage-ui-popover-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -11535,9 +12004,9 @@ hideArrow?: boolean</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> RadioGroup</h2>
       <div class="badges">
-        <label for="c-34-backstage-ui-radiogroup-props" class="badge ok as-toggle">6 prop types</label>
+        <label for="c-35-backstage-ui-radiogroup-props" class="badge ok as-toggle">6 prop types</label>
         
-        <label for="c-34-backstage-ui-radiogroup-stories" class="badge ok as-toggle">9 stories</label>
+        <label for="c-35-backstage-ui-radiogroup-stories" class="badge ok as-toggle">9 stories</label>
         
         
       </div>
@@ -11551,10 +12020,10 @@ hideArrow?: boolean</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-34-backstage-ui-radiogroup-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-35-backstage-ui-radiogroup-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-34-backstage-ui-radiogroup-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-35-backstage-ui-radiogroup-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -11735,9 +12204,9 @@ secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> SearchAutocomplete</h2>
       <div class="badges">
-        <label for="c-35-backstage-ui-searchautocomplete-props" class="badge ok as-toggle">13 prop types</label>
+        <label for="c-36-backstage-ui-searchautocomplete-props" class="badge ok as-toggle">13 prop types</label>
         
-        <label for="c-35-backstage-ui-searchautocomplete-stories" class="badge ok as-toggle">9 stories</label>
+        <label for="c-36-backstage-ui-searchautocomplete-stories" class="badge ok as-toggle">9 stories</label>
         
         
       </div>
@@ -11751,10 +12220,10 @@ secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-35-backstage-ui-searchautocomplete-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-36-backstage-ui-searchautocomplete-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-35-backstage-ui-searchautocomplete-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-36-backstage-ui-searchautocomplete-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -12254,9 +12723,9 @@ import { RiCactusLine } from "@remixicon/react";</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> SearchField</h2>
       <div class="badges">
-        <label for="c-36-backstage-ui-searchfield-props" class="badge ok as-toggle">8 prop types</label>
+        <label for="c-37-backstage-ui-searchfield-props" class="badge ok as-toggle">8 prop types</label>
         
-        <label for="c-36-backstage-ui-searchfield-stories" class="badge ok as-toggle">21 stories</label>
+        <label for="c-37-backstage-ui-searchfield-stories" class="badge ok as-toggle">21 stories</label>
         
         
       </div>
@@ -12270,10 +12739,10 @@ import { RiCactusLine } from "@remixicon/react";</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-36-backstage-ui-searchfield-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-37-backstage-ui-searchfield-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-36-backstage-ui-searchfield-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-37-backstage-ui-searchfield-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -12690,7 +13159,7 @@ import { RiCactusLine, RiEBike2Line } from "@remixicon/react";</code></pre>
 <article
   class="card 
   no-error 
-  no-info 
+  has-info 
   no-story-error
   no-doc-error"
   role="listitem"
@@ -12699,86 +13168,38 @@ import { RiCactusLine, RiEBike2Line } from "@remixicon/react";</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Select</h2>
       <div class="badges">
-        <label for="c-37-backstage-ui-select-props" class="badge ok as-toggle">11 prop types</label>
         
-        <label for="c-37-backstage-ui-select-stories" class="badge ok as-toggle">24 stories</label>
+        <label for="c-38-backstage-ui-select-info" class="badge info as-toggle">1 info</label>
+        <label for="c-38-backstage-ui-select-stories" class="badge ok as-toggle">29 stories</label>
         
         
       </div>
     </div>
     <div class="meta" title="./packages/ui/src/components/Select/Select.stories.tsx">backstage-ui-select · ./packages/ui/src/components/Select/Select.stories.tsx</div>
     
-    <div class="hint">A dropdown picker for selecting one or multiple options from a list, with optional search filtering and inline error display.</div>
+    
     <div class="kv"><span class="chip">public:  </span></div>
   </div>
 
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
+  <input id="c-38-backstage-ui-select-info" class="tg tg-info" type="checkbox" hidden />
+  <input id="c-38-backstage-ui-select-stories" class="tg tg-stories" type="checkbox" hidden />
   
-  <input id="c-37-backstage-ui-select-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-37-backstage-ui-select-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
     
-    
-        <div class="panel panel-props">
-          <div class="note ok">
-            <div class="row">
-              <span class="ex-name">Prop types <small>(react-docgen)</small></span>
-              <span class="badge ok">11 prop types</span>
-            </div>
-            <pre><code>Component: packages/ui/src/components/Select/Select.tsx::Select</code></pre>
-            <pre><code>Props:</code></pre>
-            <pre><code>className?: string
-
-description?: FieldLabelProps[&#39;description&#39;]
-
-/**
- * An icon to render before the input
- */
-icon?: ReactNode
-
-isRequired?: boolean
-
-label?: FieldLabelProps[&#39;label&#39;]
-
-/**
- * The options of the select field. Pass flat options, option sections for
- * grouped display, or a mix of both in the same array.
- */
-options?: Array&lt;Option | OptionSection&gt;
-
-/**
- * Enable search/filter functionality in the dropdown
- * @defaultValue false
- */
-searchable?: boolean
-
-/**
- * placeholder text for the search input
- * only used when searchable is true
- * @defaultvalue &#39;search...&#39;
- */
-searchPlaceholder?: string
-
-secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]
-
-/**
- * Selection mode, single or multiple
- * @defaultvalue &#39;single&#39;
- */
-selectionMode?: T
-
-/**
- * The size of the select field
- * @defaultValue &#39;small&#39;
- */
-size?: &#39;small&#39; | &#39;medium&#39; | Partial&lt;Record&lt;Breakpoint, &#39;small&#39; | &#39;medium&#39;&gt;&gt;</code></pre>
-          </div>
+        <div class="panel panel-info">
+          
+    <div class="note info">
+      <div class="note-title">Info</div>
+      <div class="note-body">No description found. Write a jsdoc comment such as /** Component description */.</div>
+    </div>
         </div>
+    
     
         <div class="panel panel-stories">
           
@@ -12788,9 +13209,9 @@ size?: &#39;small&#39; | &#39;medium&#39; | Partial&lt;Record&lt;Breakpoint, &#3
                 <div class="row">
                   <span class="ex-name">Imports</span>
                 </div>
-                <pre><code>import { Box, Flex, Select, Text } from "@backstage/ui";
+                <pre><code>import { Box, Flex, Select, SelectItem, SelectItemProfile, SelectItemText, Text } from "@backstage/ui";
 import { Form } from "react-aria-components";
-import { RiCloudLine } from "@remixicon/react";</code></pre>
+import { RiCheckLine, RiCloudLine } from "@remixicon/react";</code></pre>
               </div>
           
           
@@ -12813,9 +13234,58 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
               <pre><code>const Searchable = () =&gt; &lt;Select
     style={{ width: 300 }}
     label=&quot;Country&quot;
-    searchable
-    searchPlaceholder=&quot;Search countries...&quot;
+    search={{ placeholder: &#39;Search countries...&#39; }}
     options={countries} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Item Types</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ItemTypes = () =&gt; (
+  &lt;Flex align=&quot;start&quot; gap=&quot;6&quot;&gt;
+    &lt;SelectItemTypesColumn size=&quot;small&quot; /&gt;
+    &lt;SelectItemTypesColumn size=&quot;medium&quot; /&gt;
+  &lt;/Flex&gt;
+);</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Client Search Shorthand</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ClientSearchShorthand = () =&gt; &lt;Select style={{ width: 300 }} label=&quot;Country&quot; search options={countries} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Server Backed Non Searchable Options</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ServerBackedNonSearchableOptions = () =&gt; &lt;ServerBackedSelect searchable={false} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Server Backed Options</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ServerBackedOptions = () =&gt; &lt;ServerBackedSelect searchable /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Server Backed Custom Items</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ServerBackedCustomItems = () =&gt; &lt;ServerBackedCustomSelect /&gt;;</code></pre>
             </div>
             <div class="note ok">
               <div class="row">
@@ -12829,10 +13299,10 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
     label=&quot;Select multiple options&quot;
     selectionMode=&quot;multiple&quot;
     options={[
-      { value: &#39;option1&#39;, label: &#39;Option 1&#39; },
-      { value: &#39;option2&#39;, label: &#39;Option 2&#39; },
-      { value: &#39;option3&#39;, label: &#39;Option 3&#39; },
-      { value: &#39;option4&#39;, label: &#39;Option 4&#39; },
+      { id: &#39;option1&#39;, label: &#39;Option 1&#39; },
+      { id: &#39;option2&#39;, label: &#39;Option 2&#39; },
+      { id: &#39;option3&#39;, label: &#39;Option 3&#39; },
+      { id: &#39;option4&#39;, label: &#39;Option 4&#39; },
     ]} /&gt;;</code></pre>
             </div>
             <div class="note ok">
@@ -12845,9 +13315,8 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
               <pre><code>const SearchableMultiple = () =&gt; &lt;Select
     style={{ width: 300 }}
     label=&quot;Skills&quot;
-    searchable
+    search={{ placeholder: &#39;Filter skills...&#39; }}
     selectionMode=&quot;multiple&quot;
-    searchPlaceholder=&quot;Filter skills...&quot;
     options={skills} /&gt;;</code></pre>
             </div>
             <div class="note ok">
@@ -12873,8 +13342,7 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
               <pre><code>const SearchableWithSections = () =&gt; &lt;Select
     style={{ width: 300 }}
     label=&quot;Font Family&quot;
-    searchable
-    searchPlaceholder=&quot;Search fonts...&quot;
+    search={{ placeholder: &#39;Search fonts...&#39; }}
     options={sectionedOptions}
     name=&quot;font&quot; /&gt;;</code></pre>
             </div>
@@ -12985,7 +13453,7 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
               </div>
               
               
-              <pre><code>const WithValue = () =&gt; &lt;Select style={{ width: 300 }} selectedKey=&quot;mono&quot; defaultSelectedKey=&quot;serif&quot; /&gt;;</code></pre>
+              <pre><code>const WithValue = () =&gt; &lt;Select style={{ width: 300 }} value=&quot;mono&quot; /&gt;;</code></pre>
             </div>
             <div class="note ok">
               <div class="row">
@@ -12996,7 +13464,7 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
               
               <pre><code>const WithDefaultValue = () =&gt; &lt;Select
     style={{ width: 300 }}
-    defaultSelectedKey=&quot;serif&quot;
+    defaultValue=&quot;serif&quot;
     options={fontOptions}
     name=&quot;font&quot; /&gt;;</code></pre>
             </div>
@@ -13036,34 +13504,34 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
     label=&quot;Document Template&quot;
     options={[
       {
-        value: &#39;annual-report-2024&#39;,
+        id: &#39;annual-report-2024&#39;,
         label:
           &#39;Annual Financial Report and Strategic Planning Document for Fiscal Year 2024 with Comprehensive Analysis of Market Trends, Competitive Landscape, Financial Performance Metrics, Revenue Projections, Cost Optimization Strategies, Risk Assessment, and Long-term Growth Initiatives Across All Business Units and Geographical Regions&#39;,
       },
       {
-        value: &#39;product-roadmap&#39;,
+        id: &#39;product-roadmap&#39;,
         label:
           &#39;Comprehensive Product Development Roadmap and Feature Implementation Timeline Including Detailed Technical Specifications, Resource Allocation Plans, Cross-functional Team Dependencies, Milestone Tracking, Quality Assurance Procedures, User Acceptance Testing Protocols, and Post-launch Support Strategy for All Product Lines and Service Offerings&#39;,
       },
       {
-        value: &#39;user-guide&#39;,
+        id: &#39;user-guide&#39;,
         label:
           &#39;Detailed User Guide and Technical Documentation for Advanced System Features Covering Installation Procedures, Configuration Settings, Security Protocols, Troubleshooting Guidelines, Best Practices, Common Use Cases, Performance Optimization Tips, Integration Methods, API Documentation, and Frequently Asked Questions with Step-by-Step Solutions&#39;,
       },
       {
-        value: &#39;marketing-plan&#39;,
+        id: &#39;marketing-plan&#39;,
         label:
           &#39;Integrated Marketing Strategy and Campaign Planning Document for Q3 2024 Encompassing Target Audience Analysis, Channel Selection Criteria, Budget Allocation Framework, Creative Development Process, Content Calendar, Social Media Strategy, Email Marketing Campaigns, SEO Optimization, Paid Advertising Plans, and ROI Measurement Methodology&#39;,
       },
       {
-        value: &#39;research-paper&#39;,
+        id: &#39;research-paper&#39;,
         label:
           &#39;Scientific Research Paper on Advanced Machine Learning Techniques and Applications Including Literature Review, Methodology Description, Experimental Setup, Data Collection Procedures, Analysis Techniques, Results Interpretation, Comparative Studies, Limitations Discussion, Future Research Directions, and Practical Implementation Guidelines&#39;,
       },
     ]}
     placeholder=&quot;Select a document template&quot;
     name=&quot;template&quot;
-    defaultSelectedKey=&quot;annual-report-2024&quot; /&gt;;</code></pre>
+    defaultValue=&quot;annual-report-2024&quot; /&gt;;</code></pre>
             </div>
             <div class="note ok">
               <div class="row">
@@ -13159,9 +13627,9 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Skeleton</h2>
       <div class="badges">
-        <label for="c-38-backstage-ui-skeleton-props" class="badge ok as-toggle">5 prop types</label>
+        <label for="c-39-backstage-ui-skeleton-props" class="badge ok as-toggle">5 prop types</label>
         
-        <label for="c-38-backstage-ui-skeleton-stories" class="badge ok as-toggle">4 stories</label>
+        <label for="c-39-backstage-ui-skeleton-stories" class="badge ok as-toggle">5 stories</label>
         
         
       </div>
@@ -13175,10 +13643,10 @@ import { RiCloudLine } from "@remixicon/react";</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-38-backstage-ui-skeleton-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-39-backstage-ui-skeleton-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-38-backstage-ui-skeleton-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-39-backstage-ui-skeleton-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -13212,7 +13680,7 @@ width?: number | string</code></pre>
                 <div class="row">
                   <span class="ex-name">Imports</span>
                 </div>
-                <pre><code>import { Flex, Skeleton } from "@backstage/ui";</code></pre>
+                <pre><code>import { Box, Flex, Skeleton, Text } from "@backstage/ui";</code></pre>
               </div>
           
           
@@ -13271,6 +13739,42 @@ width?: number | string</code></pre>
   &lt;/Flex&gt;
 );</code></pre>
             </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Background Awareness</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const BackgroundAwareness = () =&gt; (
+  &lt;Flex direction=&quot;column&quot; gap=&quot;4&quot;&gt;
+    &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot;&gt;
+      &lt;Text&gt;Neutral 1 container&lt;/Text&gt;
+      &lt;Flex gap=&quot;2&quot; mt=&quot;2&quot; direction=&quot;column&quot; pb=&quot;4&quot;&gt;
+        &lt;Skeleton width={200} height={12} /&gt;
+        &lt;Skeleton width={200} height={12} /&gt;
+        &lt;Skeleton width={200} height={12} /&gt;
+      &lt;/Flex&gt;
+      &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot;&gt;
+        &lt;Text&gt;Neutral 2 container&lt;/Text&gt;
+        &lt;Flex gap=&quot;2&quot; mt=&quot;2&quot; direction=&quot;column&quot; pb=&quot;4&quot;&gt;
+          &lt;Skeleton width={200} height={12} /&gt;
+          &lt;Skeleton width={200} height={12} /&gt;
+          &lt;Skeleton width={200} height={12} /&gt;
+        &lt;/Flex&gt;
+        &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot;&gt;
+          &lt;Text&gt;Neutral 3 container&lt;/Text&gt;
+          &lt;Flex gap=&quot;2&quot; mt=&quot;2&quot; direction=&quot;column&quot;&gt;
+            &lt;Skeleton width={200} height={12} /&gt;
+            &lt;Skeleton width={200} height={12} /&gt;
+            &lt;Skeleton width={200} height={12} /&gt;
+          &lt;/Flex&gt;
+        &lt;/Box&gt;
+      &lt;/Box&gt;
+    &lt;/Box&gt;
+  &lt;/Flex&gt;
+);</code></pre>
+            </div>
         </div>
     
     
@@ -13288,9 +13792,9 @@ width?: number | string</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Slider</h2>
       <div class="badges">
-        <label for="c-39-backstage-ui-slider-props" class="badge ok as-toggle">5 prop types</label>
+        <label for="c-40-backstage-ui-slider-props" class="badge ok as-toggle">5 prop types</label>
         
-        <label for="c-39-backstage-ui-slider-stories" class="badge ok as-toggle">10 stories</label>
+        <label for="c-40-backstage-ui-slider-stories" class="badge ok as-toggle">10 stories</label>
         
         
       </div>
@@ -13304,10 +13808,10 @@ width?: number | string</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-39-backstage-ui-slider-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-40-backstage-ui-slider-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-39-backstage-ui-slider-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-40-backstage-ui-slider-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -13482,9 +13986,9 @@ secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Switch</h2>
       <div class="badges">
-        <label for="c-40-backstage-ui-switch-props" class="badge ok as-toggle">2 prop types</label>
+        <label for="c-41-backstage-ui-switch-props" class="badge ok as-toggle">2 prop types</label>
         
-        <label for="c-40-backstage-ui-switch-stories" class="badge ok as-toggle">2 stories</label>
+        <label for="c-41-backstage-ui-switch-stories" class="badge ok as-toggle">4 stories</label>
         
         
       </div>
@@ -13498,10 +14002,10 @@ secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-40-backstage-ui-switch-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-41-backstage-ui-switch-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-40-backstage-ui-switch-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-41-backstage-ui-switch-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -13532,7 +14036,7 @@ label?: string</code></pre>
                 <div class="row">
                   <span class="ex-name">Imports</span>
                 </div>
-                <pre><code>import { Switch } from "@backstage/ui";</code></pre>
+                <pre><code>import { Box, Flex, Switch, Text } from "@backstage/ui";</code></pre>
               </div>
           
           
@@ -13554,6 +14058,50 @@ label?: string</code></pre>
               
               <pre><code>const Disabled = () =&gt; &lt;Switch isDisabled /&gt;;</code></pre>
             </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Auto Bg</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const AutoBg = () =&gt; &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot;&gt;
+    &lt;Flex direction=&quot;column&quot; gap=&quot;4&quot;&gt;
+        &lt;Text&gt;Neutral 1 container&lt;/Text&gt;
+        &lt;Flex gap=&quot;4&quot;&gt;
+            &lt;Switch label=&quot;Label&quot; /&gt;
+            &lt;Switch label=&quot;Label&quot; isSelected /&gt;
+        &lt;/Flex&gt;
+    &lt;/Flex&gt;
+    &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot; mt=&quot;4&quot;&gt;
+        &lt;Flex direction=&quot;column&quot; gap=&quot;4&quot;&gt;
+            &lt;Text&gt;Neutral 2 container&lt;/Text&gt;
+            &lt;Flex gap=&quot;4&quot;&gt;
+                &lt;Switch label=&quot;Label&quot; /&gt;
+                &lt;Switch label=&quot;Label&quot; isSelected /&gt;
+            &lt;/Flex&gt;
+        &lt;/Flex&gt;
+        &lt;Box bg=&quot;neutral&quot; p=&quot;4&quot; mt=&quot;4&quot;&gt;
+            &lt;Flex direction=&quot;column&quot; gap=&quot;4&quot;&gt;
+                &lt;Text&gt;Neutral 3 container&lt;/Text&gt;
+                &lt;Flex gap=&quot;4&quot;&gt;
+                    &lt;Switch label=&quot;Label&quot; /&gt;
+                    &lt;Switch label=&quot;Label&quot; isSelected /&gt;
+                &lt;/Flex&gt;
+            &lt;/Flex&gt;
+        &lt;/Box&gt;
+    &lt;/Box&gt;
+&lt;/Box&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Auto Bg Disabled</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const AutoBgDisabled = () =&gt; &lt;Switch isDisabled /&gt;;</code></pre>
+            </div>
         </div>
     
     
@@ -13571,9 +14119,9 @@ label?: string</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> TablePagination</h2>
       <div class="badges">
-        <label for="c-41-backstage-ui-tablepagination-props" class="badge ok as-toggle">12 prop types</label>
+        <label for="c-42-backstage-ui-tablepagination-props" class="badge ok as-toggle">12 prop types</label>
         
-        <label for="c-41-backstage-ui-tablepagination-stories" class="badge ok as-toggle">8 stories</label>
+        <label for="c-42-backstage-ui-tablepagination-stories" class="badge ok as-toggle">8 stories</label>
         
         
       </div>
@@ -13587,10 +14135,10 @@ label?: string</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-41-backstage-ui-tablepagination-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-42-backstage-ui-tablepagination-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-41-backstage-ui-tablepagination-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-42-backstage-ui-tablepagination-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -13622,8 +14170,14 @@ onPageSizeChange?: (size: number) =&gt; void
 
 onPreviousPage: () =&gt; void
 
+/**
+ * The controlled number of rows displayed per page.
+ */
 pageSize: number
 
+/**
+ * Available page sizes. An empty array hides the page-size selector.
+ */
 pageSizeOptions?: number[] | PageSizeOption[]
 
 showPageSizeOptions?: boolean
@@ -13751,9 +14305,9 @@ totalCount?: number</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Tabs</h2>
       <div class="badges">
-        <label for="c-42-backstage-ui-tabs-props" class="badge ok as-toggle">2 prop types</label>
+        <label for="c-43-backstage-ui-tabs-props" class="badge ok as-toggle">2 prop types</label>
         
-        <label for="c-42-backstage-ui-tabs-stories" class="badge ok as-toggle">14 stories</label>
+        <label for="c-43-backstage-ui-tabs-stories" class="badge ok as-toggle">15 stories</label>
         
         
       </div>
@@ -13767,10 +14321,10 @@ totalCount?: number</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-42-backstage-ui-tabs-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-43-backstage-ui-tabs-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-42-backstage-ui-tabs-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-43-backstage-ui-tabs-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -14322,6 +14876,34 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
             </div>
             <div class="note ok">
               <div class="row">
+                <span class="ex-name">Dynamic Tab Width</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const DynamicTabWidth = () =&gt; (
+  &lt;Tabs&gt;
+    &lt;TabList&gt;
+      &lt;Tab id=&quot;tab1&quot;&gt;First&lt;/Tab&gt;
+      &lt;Tab id=&quot;tab2&quot;&gt;
+        &lt;CyclingTab /&gt;
+      &lt;/Tab&gt;
+      &lt;Tab id=&quot;tab3&quot;&gt;Last&lt;/Tab&gt;
+    &lt;/TabList&gt;
+    &lt;TabPanel id=&quot;tab1&quot;&gt;
+      &lt;Text&gt;First tab content&lt;/Text&gt;
+    &lt;/TabPanel&gt;
+    &lt;TabPanel id=&quot;tab2&quot;&gt;
+      &lt;Text&gt;Middle tab content — its title cycles every second&lt;/Text&gt;
+    &lt;/TabPanel&gt;
+    &lt;TabPanel id=&quot;tab3&quot;&gt;
+      &lt;Text&gt;Last tab content&lt;/Text&gt;
+    &lt;/TabPanel&gt;
+  &lt;/Tabs&gt;
+);</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
                 <span class="ex-name">Auto Selection Of Tabs</span>
                 <span class="badge ok">story ok</span>
               </div>
@@ -14400,9 +14982,9 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> TagGroup</h2>
       <div class="badges">
-        <label for="c-43-backstage-ui-taggroup-props" class="badge ok as-toggle">4 prop types</label>
+        <label for="c-44-backstage-ui-taggroup-props" class="badge ok as-toggle">4 prop types</label>
         
-        <label for="c-43-backstage-ui-taggroup-stories" class="badge ok as-toggle">9 stories</label>
+        <label for="c-44-backstage-ui-taggroup-stories" class="badge ok as-toggle">9 stories</label>
         
         
       </div>
@@ -14416,10 +14998,10 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-43-backstage-ui-taggroup-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-44-backstage-ui-taggroup-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-43-backstage-ui-taggroup-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-44-backstage-ui-taggroup-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -14654,9 +15236,9 @@ import { RiAccountCircleLine, RiBugLine, RiEyeLine, RiHeartLine } from "@remixic
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> Text</h2>
       <div class="badges">
-        <label for="c-44-backstage-ui-text-props" class="badge ok as-toggle">6 prop types</label>
+        <label for="c-45-backstage-ui-text-props" class="badge ok as-toggle">6 prop types</label>
         
-        <label for="c-44-backstage-ui-text-stories" class="badge ok as-toggle">9 stories</label>
+        <label for="c-45-backstage-ui-text-stories" class="badge ok as-toggle">9 stories</label>
         
         
       </div>
@@ -14670,10 +15252,10 @@ import { RiAccountCircleLine, RiBugLine, RiEyeLine, RiHeartLine } from "@remixic
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-44-backstage-ui-text-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-45-backstage-ui-text-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-44-backstage-ui-text-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-45-backstage-ui-text-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -14903,14 +15485,191 @@ weight?: TextWeights | Partial&lt;Record&lt;Breakpoint, TextWeights&gt;&gt;</cod
   no-story-error
   no-doc-error"
   role="listitem"
+  aria-label="TextAreaField">
+  <div class="head">
+    <div class="title">
+      <h2><span class="status-dot dot-ok"></span> TextAreaField</h2>
+      <div class="badges">
+        <label for="c-46-backstage-ui-textareafield-props" class="badge ok as-toggle">7 prop types</label>
+        
+        <label for="c-46-backstage-ui-textareafield-stories" class="badge ok as-toggle">8 stories</label>
+        
+        
+      </div>
+    </div>
+    <div class="meta" title="./packages/ui/src/components/TextAreaField/TextAreaField.stories.tsx">backstage-ui-textareafield · ./packages/ui/src/components/TextAreaField/TextAreaField.stories.tsx</div>
+    
+    <div class="hint">A multi-line text input with an integrated label and inline error display.</div>
+    <div class="kv"><span class="chip">public:  </span></div>
+  </div>
+
+  <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
+  
+  
+  <input id="c-46-backstage-ui-textareafield-stories" class="tg tg-stories" type="checkbox" hidden />
+  
+  
+  <input id="c-46-backstage-ui-textareafield-props" class="tg tg-props" type="checkbox" hidden />
+
+  <div class="panels">
+    
+    
+    
+        <div class="panel panel-props">
+          <div class="note ok">
+            <div class="row">
+              <span class="ex-name">Prop types <small>(react-docgen)</small></span>
+              <span class="badge ok">7 prop types</span>
+            </div>
+            <pre><code>Component: packages/ui/src/components/TextAreaField/TextAreaField.tsx::TextAreaField</code></pre>
+            <pre><code>Props:</code></pre>
+            <pre><code>className?: string
+
+description?: FieldLabelProps[&#39;description&#39;]
+
+label?: FieldLabelProps[&#39;label&#39;]
+
+/**
+ * Text to display in the text area when it has no value
+ */
+placeholder?: string
+
+/**
+ * The number of visible text lines, controlling the initial and minimum height
+ * @defaultValue 3
+ */
+rows?: number
+
+secondaryLabel?: FieldLabelProps[&#39;secondaryLabel&#39;]
+
+/**
+ * The size of the text area field
+ * @defaultValue &#39;small&#39;
+ */
+size?: &#39;small&#39; | &#39;medium&#39; | Partial&lt;Record&lt;Breakpoint, &#39;small&#39; | &#39;medium&#39;&gt;&gt;</code></pre>
+          </div>
+        </div>
+    
+        <div class="panel panel-stories">
+          
+          
+          
+          <div class="note ok">
+                <div class="row">
+                  <span class="ex-name">Imports</span>
+                </div>
+                <pre><code>import { Flex, TextAreaField } from "@backstage/ui";
+import { Form } from "react-aria-components";</code></pre>
+              </div>
+          
+          
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Default</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Default = () =&gt; &lt;TextAreaField
+    name=&quot;message&quot;
+    placeholder=&quot;Enter a message&quot;
+    style={{
+      maxWidth: &#39;300px&#39;,
+    }} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Label</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithLabel = () =&gt; &lt;TextAreaField label=&quot;Message&quot; /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">With Description</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const WithDescription = () =&gt; &lt;TextAreaField description=&quot;Share as much detail as you like.&quot; /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Required</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Required = () =&gt; &lt;TextAreaField isRequired /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Disabled</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Disabled = () =&gt; &lt;TextAreaField isDisabled /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Sizes</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Sizes = () =&gt; &lt;Flex direction=&quot;column&quot; gap=&quot;4&quot; style={{ maxWidth: &#39;300px&#39; }}&gt;
+    &lt;TextAreaField size=&quot;small&quot; label=&quot;Small&quot; /&gt;
+    &lt;TextAreaField size=&quot;medium&quot; label=&quot;Medium&quot; /&gt;
+&lt;/Flex&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Scrolling</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const Scrolling = () =&gt; &lt;TextAreaField
+    rows={3}
+    defaultValue={Array.from(
+      { length: 12 },
+      (_, i) =&gt; `Line ${i + 1}: this content scrolls within a fixed height.`,
+    ).join(&#39;\n&#39;)} /&gt;;</code></pre>
+            </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Show Error</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ShowError = () =&gt; &lt;Form validationErrors={{ message: &#39;Message is required&#39; }}&gt;
+    &lt;TextAreaField /&gt;
+&lt;/Form&gt;;</code></pre>
+            </div>
+        </div>
+    
+    
+  </div>
+</article>
+<article
+  class="card 
+  no-error 
+  no-info 
+  no-story-error
+  no-doc-error"
+  role="listitem"
   aria-label="TextField">
   <div class="head">
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> TextField</h2>
       <div class="badges">
-        <label for="c-45-backstage-ui-textfield-props" class="badge ok as-toggle">8 prop types</label>
+        <label for="c-47-backstage-ui-textfield-props" class="badge ok as-toggle">8 prop types</label>
         
-        <label for="c-45-backstage-ui-textfield-stories" class="badge ok as-toggle">13 stories</label>
+        <label for="c-47-backstage-ui-textfield-stories" class="badge ok as-toggle">13 stories</label>
         
         
       </div>
@@ -14924,10 +15683,10 @@ weight?: TextWeights | Partial&lt;Record&lt;Breakpoint, TextWeights&gt;&gt;</cod
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-45-backstage-ui-textfield-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-47-backstage-ui-textfield-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-45-backstage-ui-textfield-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-47-backstage-ui-textfield-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -15187,9 +15946,9 @@ import { RiEyeLine, RiSparklingLine } from "@remixicon/react";</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> ToastContainer</h2>
       <div class="badges">
-        <label for="c-46-app-toast-props" class="badge ok as-toggle">2 prop types</label>
+        <label for="c-48-app-toast-props" class="badge ok as-toggle">2 prop types</label>
         
-        <label for="c-46-app-toast-stories" class="badge ok as-toggle">11 stories</label>
+        <label for="c-48-app-toast-stories" class="badge ok as-toggle">11 stories</label>
         
         
       </div>
@@ -15203,10 +15962,10 @@ import { RiEyeLine, RiSparklingLine } from "@remixicon/react";</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-46-app-toast-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-48-app-toast-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-46-app-toast-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-48-app-toast-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -15720,9 +16479,9 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> ToggleButton</h2>
       <div class="badges">
-        <label for="c-47-backstage-ui-togglebutton-props" class="badge ok as-toggle">5 prop types</label>
+        <label for="c-49-backstage-ui-togglebutton-props" class="badge ok as-toggle">5 prop types</label>
         
-        <label for="c-47-backstage-ui-togglebutton-stories" class="badge ok as-toggle">10 stories</label>
+        <label for="c-49-backstage-ui-togglebutton-stories" class="badge ok as-toggle">10 stories</label>
         
         
       </div>
@@ -15736,10 +16495,10 @@ import { MemoryRouter } from "react-router-dom";</code></pre>
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-47-backstage-ui-togglebutton-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-49-backstage-ui-togglebutton-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-47-backstage-ui-togglebutton-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-49-backstage-ui-togglebutton-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -16036,7 +16795,7 @@ import { RiArrowRightSLine, RiCheckLine, RiCloudLine, RiStarFill, RiStarLine } f
                     height: 8,
                     borderRadius: &#39;50%&#39;,
                     backgroundColor: isSelected
-                      ? &#39;var(--bui-fg-success)&#39;
+                      ? &#39;var(--bui-fg-positive)&#39;
                       : &#39;var(--bui-fg-secondary)&#39;,
                   }}
                 /&gt;
@@ -16053,7 +16812,7 @@ import { RiArrowRightSLine, RiCheckLine, RiCloudLine, RiStarFill, RiStarLine } f
                     height: 8,
                     borderRadius: &#39;50%&#39;,
                     backgroundColor: isSelected
-                      ? &#39;var(--bui-fg-danger)&#39;
+                      ? &#39;var(--bui-fg-negative)&#39;
                       : &#39;var(--bui-fg-secondary)&#39;,
                   }}
                 /&gt;
@@ -16084,9 +16843,9 @@ import { RiArrowRightSLine, RiCheckLine, RiCloudLine, RiStarFill, RiStarLine } f
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> ToggleButtonGroup</h2>
       <div class="badges">
-        <label for="c-48-backstage-ui-togglebuttongroup-props" class="badge ok as-toggle">2 prop types</label>
+        <label for="c-50-backstage-ui-togglebuttongroup-props" class="badge ok as-toggle">2 prop types</label>
         
-        <label for="c-48-backstage-ui-togglebuttongroup-stories" class="badge ok as-toggle">10 stories</label>
+        <label for="c-50-backstage-ui-togglebuttongroup-stories" class="badge ok as-toggle">10 stories</label>
         
         
       </div>
@@ -16100,10 +16859,10 @@ import { RiArrowRightSLine, RiCheckLine, RiCloudLine, RiStarFill, RiStarLine } f
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-48-backstage-ui-togglebuttongroup-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-50-backstage-ui-togglebuttongroup-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-48-backstage-ui-togglebuttongroup-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-50-backstage-ui-togglebuttongroup-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -16377,7 +17136,7 @@ import { RiArrowRightSLine, RiCloudLine, RiStarFill, RiStarLine } from "@remixic
       <div class="badges">
         
         
-        <label for="c-49-backstage-ui-tooltip-stories" class="badge ok as-toggle">6 stories</label>
+        <label for="c-51-backstage-ui-tooltip-stories" class="badge ok as-toggle">6 stories</label>
         
         
       </div>
@@ -16391,7 +17150,7 @@ import { RiArrowRightSLine, RiCloudLine, RiStarFill, RiStarLine } from "@remixic
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-49-backstage-ui-tooltip-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-51-backstage-ui-tooltip-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
   
@@ -16544,9 +17303,9 @@ import { RiArrowRightSLine, RiCloudLine, RiStarFill, RiStarLine } from "@remixic
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> visual</h2>
       <div class="badges">
-        <label for="c-50-backstage-ui-table-visual-props" class="badge ok as-toggle">14 prop types</label>
+        <label for="c-52-backstage-ui-table-visual-props" class="badge ok as-toggle">14 prop types</label>
         
-        <label for="c-50-backstage-ui-table-visual-stories" class="badge ok as-toggle">9 stories</label>
+        <label for="c-52-backstage-ui-table-visual-stories" class="badge ok as-toggle">10 stories</label>
         
         
       </div>
@@ -16560,10 +17319,10 @@ import { RiArrowRightSLine, RiCloudLine, RiStarFill, RiStarLine } from "@remixic
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-50-backstage-ui-table-visual-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-52-backstage-ui-table-visual-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-50-backstage-ui-table-visual-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-52-backstage-ui-table-visual-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
@@ -16620,7 +17379,7 @@ virtualized?: | boolean
                 <div class="row">
                   <span class="ex-name">Imports</span>
                 </div>
-                <pre><code>import { CellProfile, CellText, Table } from "@backstage/ui";</code></pre>
+                <pre><code>import { CellProfile, CellText, Table, Text } from "@backstage/ui";</code></pre>
               </div>
           
           
@@ -16997,6 +17756,115 @@ virtualized?: | boolean
   return &lt;Table columnConfig={columns} {...tableProps} /&gt;;
 };</code></pre>
             </div>
+            <div class="note ok">
+              <div class="row">
+                <span class="ex-name">Column Widths With Fr</span>
+                <span class="badge ok">story ok</span>
+              </div>
+              
+              
+              <pre><code>const ColumnWidthsWithFr = () =&gt; {
+  const fixedColumns: ColumnConfig&lt;Data1Item&gt;[] = [
+    {
+      id: &#39;name&#39;,
+      label: &#39;Name (3fr)&#39;,
+      isRowHeader: true,
+      width: &#39;3fr&#39;,
+      cell: item =&gt; (
+        &lt;CellText title={item.name} description={item.description} /&gt;
+      ),
+    },
+    {
+      id: &#39;owner&#39;,
+      label: &#39;Owner (2fr)&#39;,
+      width: &#39;2fr&#39;,
+      cell: item =&gt; &lt;CellText title={item.owner.name} /&gt;,
+    },
+    {
+      id: &#39;type&#39;,
+      label: &#39;Type (1fr)&#39;,
+      width: &#39;1fr&#39;,
+      cell: item =&gt; &lt;CellText title={item.type} /&gt;,
+    },
+    {
+      id: &#39;lifecycle&#39;,
+      label: &#39;Lifecycle (1fr)&#39;,
+      width: &#39;1fr&#39;,
+      cell: item =&gt; &lt;CellText title={item.lifecycle} /&gt;,
+    },
+  ];
+
+  const constrainedColumns: ColumnConfig&lt;Data1Item&gt;[] = [
+    {
+      id: &#39;name&#39;,
+      label: &#39;Name (3fr, min 200px)&#39;,
+      isRowHeader: true,
+      defaultWidth: &#39;3fr&#39;,
+      minWidth: 200,
+      cell: item =&gt; (
+        &lt;CellText title={item.name} description={item.description} /&gt;
+      ),
+    },
+    {
+      id: &#39;owner&#39;,
+      label: &#39;Owner (2fr, 120–300px)&#39;,
+      defaultWidth: &#39;2fr&#39;,
+      minWidth: 120,
+      maxWidth: 300,
+      cell: item =&gt; &lt;CellText title={item.owner.name} /&gt;,
+    },
+    {
+      id: &#39;type&#39;,
+      label: &#39;Type (1fr, 80–150px)&#39;,
+      defaultWidth: &#39;1fr&#39;,
+      minWidth: 80,
+      maxWidth: 150,
+      cell: item =&gt; &lt;CellText title={item.type} /&gt;,
+    },
+    {
+      id: &#39;lifecycle&#39;,
+      label: &#39;Lifecycle (1fr, 80–150px)&#39;,
+      defaultWidth: &#39;1fr&#39;,
+      minWidth: 80,
+      maxWidth: 150,
+      cell: item =&gt; &lt;CellText title={item.lifecycle} /&gt;,
+    },
+  ];
+
+  const fixed = useTable({
+    mode: &#39;complete&#39;,
+    getData: () =&gt; data1,
+    paginationOptions: { pageSize: 5 },
+  });
+
+  const constrained = useTable({
+    mode: &#39;complete&#39;,
+    getData: () =&gt; data1,
+    paginationOptions: { pageSize: 5 },
+  });
+
+  return (
+    &lt;div style={{ display: &#39;flex&#39;, flexDirection: &#39;column&#39;, gap: 32 }}&gt;
+      &lt;div&gt;
+        &lt;Text variant=&quot;body-large&quot; color=&quot;secondary&quot;&gt;
+          Fixed ratios with width — columns keep their proportions
+        &lt;/Text&gt;
+        &lt;Table columnConfig={fixedColumns} {...fixed.tableProps} /&gt;
+      &lt;/div&gt;
+      &lt;div&gt;
+        &lt;Text variant=&quot;body-large&quot; color=&quot;secondary&quot;&gt;
+          Resizable with defaultWidth — fr ratios with pixel min/max
+          constraints
+        &lt;/Text&gt;
+        &lt;Table
+          columnConfig={constrainedColumns}
+          {...constrained.tableProps}
+        /&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+};</code></pre>
+            </div>
         </div>
     
     
@@ -17014,9 +17882,9 @@ virtualized?: | boolean
     <div class="title">
       <h2><span class="status-dot dot-ok"></span> VisuallyHidden</h2>
       <div class="badges">
-        <label for="c-51-backstage-ui-visuallyhidden-props" class="badge ok as-toggle">1 prop type</label>
+        <label for="c-53-backstage-ui-visuallyhidden-props" class="badge ok as-toggle">1 prop type</label>
         
-        <label for="c-51-backstage-ui-visuallyhidden-stories" class="badge ok as-toggle">2 stories</label>
+        <label for="c-53-backstage-ui-visuallyhidden-stories" class="badge ok as-toggle">2 stories</label>
         
         
       </div>
@@ -17030,10 +17898,10 @@ virtualized?: | boolean
   <!-- ⬇️ Hidden toggles must be siblings BEFORE .panels -->
   
   
-  <input id="c-51-backstage-ui-visuallyhidden-stories" class="tg tg-stories" type="checkbox" hidden />
+  <input id="c-53-backstage-ui-visuallyhidden-stories" class="tg tg-stories" type="checkbox" hidden />
   
   
-  <input id="c-51-backstage-ui-visuallyhidden-props" class="tg tg-props" type="checkbox" hidden />
+  <input id="c-53-backstage-ui-visuallyhidden-props" class="tg tg-props" type="checkbox" hidden />
 
   <div class="panels">
     
