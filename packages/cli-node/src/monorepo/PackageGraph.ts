@@ -332,7 +332,7 @@ export class PackageGraph extends Map<string, PackageGraphNode> {
       Array.from(this.values()).map(pkg => [
         // relative from root, convert to posix, and add a / at the end
         path
-          .relative(targetPaths.rootDir, pkg.dir)
+          .relative(targetPaths.workspaceRootDir, pkg.dir)
           .split(path.sep)
           .join(path.posix.sep) + path.posix.sep,
         pkg,
@@ -374,7 +374,7 @@ export class PackageGraph extends Map<string, PackageGraphNode> {
       let otherLockfile: Lockfile;
       try {
         thisLockfile = await Lockfile.load(
-          targetPaths.resolveRoot('yarn.lock'),
+          targetPaths.resolveWorkspaceRoot('yarn.lock'),
         );
         otherLockfile = Lockfile.parse(
           await GitUtils.readFileAtRef('yarn.lock', options.ref),

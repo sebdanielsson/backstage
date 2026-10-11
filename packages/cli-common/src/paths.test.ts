@@ -15,8 +15,17 @@
  */
 
 /* eslint-disable no-restricted-syntax */
-import { resolve as resolvePath } from 'node:path';
-import { findPaths, findRootPath, findOwnRootDir, findOwnPaths } from './paths';
+import fs from 'node:fs';
+import os from 'node:os';
+import { dirname, resolve as resolvePath } from 'node:path';
+import {
+  findPaths,
+  findRootPath,
+  findOwnRootDir,
+  findOwnPaths,
+  targetPaths,
+} from './paths';
+import { overrideTargetPaths } from './testUtils';
 
 describe('paths', () => {
   afterEach(() => {
@@ -121,5 +130,113 @@ describe('paths', () => {
       resolvePath(__dirname, '../../cli-common/src'),
     );
     expect(paths.targetRoot).toBe(resolvePath(__dirname, '../../cli-common'));
+  });
+});
+
+describe('targetPaths', () => {
+  let tmpDir: string;
+
+  beforeAll(() => {
+    tmpDir = fs.realpathSync(
+      fs.mkdtempSync(resolvePath(os.tmpdir(), 'cli-common-paths-')),
+    );
+    const files: Record<string, string> = {
+      // A pnpm workspace with a Backstage installation in a subdirectory
+      'pnpm/package.json': '{}',
+      'pnpm/pnpm-workspace.yaml': 'packages:\n  - apps/**\n  - libs/*\n',
+      'pnpm/apps/backstage/backstage.json': '{}',
+      'pnpm/apps/backstage/package.json': '{}',
+      'pnpm/apps/backstage/packages/backend/package.json': '{}',
+      'pnpm/libs/other/package.json': '{}',
+      // A Yarn workspace with the Backstage installation at the root
+      'yarn/package.json': JSON.stringify({ workspaces: ['packages/*'] }),
+      'yarn/backstage.json': '{}',
+      'yarn/packages/app/package.json': '{}',
+      // A package that is not part of any workspace
+      'standalone/package.json': '{}',
+    };
+    for (const [path, content] of Object.entries(files)) {
+      fs.mkdirSync(dirname(resolvePath(tmpDir, path)), { recursive: true });
+      fs.writeFileSync(resolvePath(tmpDir, path), content);
+    }
+  });
+
+  afterAll(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('finds the workspace and installation roots and re-resolves them when the working directory changes', () => {
+    const cwd = jest.spyOn(process, 'cwd');
+
+    cwd.mockReturnValue(
+      resolvePath(tmpDir, 'pnpm/apps/backstage/packages/backend'),
+    );
+    expect(targetPaths.dir).toBe(
+      resolvePath(tmpDir, 'pnpm/apps/backstage/packages/backend'),
+    );
+    expect(targetPaths.workspaceRootDir).toBe(resolvePath(tmpDir, 'pnpm'));
+    expect(targetPaths.installationRootDir).toBe(
+      resolvePath(tmpDir, 'pnpm/apps/backstage'),
+    );
+    expect(targetPaths.rootDir).toBe(resolvePath(tmpDir, 'pnpm'));
+    expect(targetPaths.resolveWorkspaceRoot('pnpm-lock.yaml')).toBe(
+      resolvePath(tmpDir, 'pnpm/pnpm-lock.yaml'),
+    );
+    expect(targetPaths.resolveInstallationRoot('app-config.yaml')).toBe(
+      resolvePath(tmpDir, 'pnpm/apps/backstage/app-config.yaml'),
+    );
+    expect(targetPaths.resolveRoot('pnpm-lock.yaml')).toBe(
+      resolvePath(tmpDir, 'pnpm/pnpm-lock.yaml'),
+    );
+
+    // Outside of the installation, the installation root falls back to the workspace root
+    cwd.mockReturnValue(resolvePath(tmpDir, 'pnpm/libs/other'));
+    expect(targetPaths.workspaceRootDir).toBe(resolvePath(tmpDir, 'pnpm'));
+    expect(targetPaths.installationRootDir).toBe(resolvePath(tmpDir, 'pnpm'));
+
+    cwd.mockReturnValue(resolvePath(tmpDir, 'yarn/packages/app'));
+    expect(targetPaths.workspaceRootDir).toBe(resolvePath(tmpDir, 'yarn'));
+    expect(targetPaths.installationRootDir).toBe(resolvePath(tmpDir, 'yarn'));
+
+    cwd.mockReturnValue(resolvePath(tmpDir, 'standalone'));
+    expect(targetPaths.workspaceRootDir).toBe(
+      resolvePath(tmpDir, 'standalone'),
+    );
+    expect(targetPaths.installationRootDir).toBe(
+      resolvePath(tmpDir, 'standalone'),
+    );
+  });
+
+  it('can be overridden with separate roots', () => {
+    const override = overrideTargetPaths({
+      dir: '/ws/apps/backstage/packages/backend',
+      workspaceRootDir: '/ws',
+      installationRootDir: '/ws/apps/backstage',
+    });
+    try {
+      expect(targetPaths.dir).toBe('/ws/apps/backstage/packages/backend');
+      expect(targetPaths.workspaceRootDir).toBe('/ws');
+      expect(targetPaths.installationRootDir).toBe('/ws/apps/backstage');
+      expect(targetPaths.rootDir).toBe('/ws');
+      expect(targetPaths.resolveWorkspaceRoot('a')).toBe('/ws/a');
+      expect(targetPaths.resolveInstallationRoot('a')).toBe(
+        '/ws/apps/backstage/a',
+      );
+      expect(targetPaths.resolveRoot('a')).toBe('/ws/a');
+    } finally {
+      override.restore();
+    }
+
+    const shorthand = overrideTargetPaths('/ws');
+    try {
+      expect(targetPaths.workspaceRootDir).toBe('/ws');
+      expect(targetPaths.installationRootDir).toBe('/ws');
+    } finally {
+      shorthand.restore();
+    }
   });
 });

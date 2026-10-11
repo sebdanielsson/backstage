@@ -80,8 +80,12 @@ export function runOutput(
 export type TargetPaths = {
   dir: string;
   rootDir: string;
+  workspaceRootDir: string;
+  installationRootDir: string;
   resolve: ResolveFunc;
   resolveRoot: ResolveFunc;
+  resolveWorkspaceRoot: ResolveFunc;
+  resolveInstallationRoot: ResolveFunc;
 };
 
 // @public

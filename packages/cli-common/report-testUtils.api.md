@@ -11,7 +11,9 @@ export function overrideTargetPaths(
 // @public
 export interface OverrideTargetPathsOptions {
   dir: string;
+  installationRootDir?: string;
   rootDir?: string;
+  workspaceRootDir?: string;
 }
 
 // @public

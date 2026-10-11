@@ -136,7 +136,7 @@ export async function runCliExtraction({
   await Promise.all(
     packageDirs.map(async packageDir => {
       console.log(`## Processing ${packageDir}`);
-      const fullDir = targetPaths.resolveRoot(packageDir);
+      const fullDir = targetPaths.resolveWorkspaceRoot(packageDir);
       const pkgJson = await fs.readJson(resolvePath(fullDir, 'package.json'));
 
       if (!pkgJson.bin) {
@@ -188,7 +188,7 @@ export async function runCliExtraction({
               console.log('');
               console.log(
                 `The conflicting file is ${relativePath(
-                  targetPaths.rootDir,
+                  targetPaths.workspaceRootDir,
                   reportPath,
                 )}, expecting the following content:`,
               );
