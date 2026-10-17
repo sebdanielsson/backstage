@@ -75,7 +75,8 @@ type Options = {
   /**
    * Files to copy into the target workspace.
    *
-   * Defaults to the lockfile of the package manager and 'package.json'.
+   * Defaults to the lockfile of the package manager and 'package.json', along
+   * with 'pnpm-workspace.yaml' for pnpm workspaces.
    */
   files?: FileEntry[];
 
@@ -255,6 +256,16 @@ export async function createDistWorkspace(
     packageManager.lockfileName(),
     'package.json',
   ];
+  // pnpm reads the workspace packages and its settings from this file
+  if (
+    !options.files &&
+    packageManager.name() === 'pnpm' &&
+    (await fs.pathExists(
+      targetPaths.resolveWorkspaceRoot('pnpm-workspace.yaml'),
+    ))
+  ) {
+    files.push('pnpm-workspace.yaml');
+  }
 
   for (const file of files) {
     const src = typeof file === 'string' ? file : file.src;
