@@ -166,6 +166,21 @@ export interface PackageManager {
   supportsBackstageVersionProtocol(): Promise<boolean>;
 
   /**
+   * Reads the dependency catalogs of the workspace, keyed by catalog name. The
+   * default catalog, which `catalog:` refers to, is named `default`. Only
+   * implemented by package managers that support catalogs.
+   */
+  readCatalogs?(): Promise<Record<string, Record<string, string>>>;
+
+  /**
+   * Sets the given dependency versions in an existing catalog of the
+   * workspace, using the names from {@link PackageManager.readCatalogs}. Fails
+   * when the catalog does not exist. Only implemented by package managers that
+   * support catalogs.
+   */
+  updateCatalog?(name: string, versions: Record<string, string>): Promise<void>;
+
+  /**
    * Returns the command that a user would type to run the given arguments
    * through the package manager, for example `yarn backstage-cli repo fix`.
    * Intended for messages to the user.

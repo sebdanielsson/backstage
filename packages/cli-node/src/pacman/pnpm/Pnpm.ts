@@ -19,6 +19,7 @@ import { run, runOutput, RunOptions, targetPaths } from '@backstage/cli-common';
 import fs from 'fs-extra';
 import { resolve as resolvePath } from 'node:path';
 import semver from 'semver';
+import { parseDocument } from 'yaml';
 import {
   PackageInfo,
   PackageManager,
@@ -259,6 +260,50 @@ export class Pnpm implements PackageManager {
     return false;
   }
 
+  /**
+   * Reads the catalogs from `pnpm-workspace.yaml` in the workspace root. The
+   * `catalog` field is the `default` catalog.
+   */
+  async readCatalogs(): Promise<Record<string, Record<string, string>>> {
+    const doc = await this.readWorkspaceDocument();
+    const data = (doc?.toJS() ?? {}) as {
+      catalog?: Record<string, string>;
+      catalogs?: Record<string, Record<string, string>>;
+    };
+    return {
+      ...(data.catalog ? { default: data.catalog } : {}),
+      ...data.catalogs,
+    };
+  }
+
+  /**
+   * Sets dependency versions in a catalog in `pnpm-workspace.yaml`, keeping
+   * the rest of the file as it is.
+   */
+  async updateCatalog(
+    name: string,
+    versions: Record<string, string>,
+  ): Promise<void> {
+    const doc = await this.readWorkspaceDocument();
+
+    let path: string[] | undefined;
+    if (name === 'default' && doc?.has('catalog')) {
+      path = ['catalog'];
+    } else if (doc?.hasIn(['catalogs', name])) {
+      path = ['catalogs', name];
+    }
+    if (!doc || !path) {
+      throw new Error(
+        `The catalog '${name}' does not exist in pnpm-workspace.yaml`,
+      );
+    }
+
+    for (const [dependency, version] of Object.entries(versions)) {
+      doc.setIn([...path, dependency], version);
+    }
+    await fs.writeFile(this.workspaceFilePath(), doc.toString());
+  }
+
   /** {@inheritDoc PackageManager.getCommandHint} */
   getCommandHint(args: string[]): string {
     return ['pnpm', ...args].join(' ');
@@ -267,6 +312,29 @@ export class Pnpm implements PackageManager {
   /** {@inheritDoc PackageManager.toString} */
   toString(): string {
     return `${this.name()}@${this.pnpmVersion}`;
+  }
+
+  private workspaceFilePath() {
+    return resolvePath(this.workspaceRootDir, 'pnpm-workspace.yaml');
+  }
+
+  private async readWorkspaceDocument() {
+    let content: string;
+    try {
+      content = await fs.readFile(this.workspaceFilePath(), 'utf8');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return undefined;
+      }
+      throw error;
+    }
+    const doc = parseDocument(content);
+    if (doc.errors.length > 0) {
+      throw new Error(
+        `Failed to parse pnpm-workspace.yaml, ${doc.errors[0].message}`,
+      );
+    }
+    return doc;
   }
 }
 

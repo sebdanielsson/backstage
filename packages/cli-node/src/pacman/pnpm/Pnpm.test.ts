@@ -244,6 +244,60 @@ describe('Pnpm', () => {
     );
   });
 
+  it('should read and update catalogs in pnpm-workspace.yaml', async () => {
+    mockRunOutput.mockResolvedValueOnce('12.7.0\n');
+    const local = await Pnpm.create({ workspaceRootDir: mockDir.path });
+
+    mockDir.setContent({});
+    await expect(local.readCatalogs()).resolves.toEqual({});
+    await expect(local.updateCatalog('default', {})).rejects.toThrow(
+      "The catalog 'default' does not exist in pnpm-workspace.yaml",
+    );
+
+    mockDir.setContent({
+      'pnpm-workspace.yaml': `packages:
+  - packages/*
+
+# The main line
+catalog:
+  '@backstage/core': ^1.0.0 # keep this
+  react: ^18.0.0
+
+catalogs:
+  backstage-next:
+    '@backstage/core': ^1.1.0-next.0
+`,
+    });
+    await expect(local.readCatalogs()).resolves.toEqual({
+      default: { '@backstage/core': '^1.0.0', react: '^18.0.0' },
+      'backstage-next': { '@backstage/core': '^1.1.0-next.0' },
+    });
+
+    await local.updateCatalog('default', { '@backstage/core': '^1.2.0' });
+    await local.updateCatalog('backstage-next', {
+      '@backstage/core': '^1.3.0-next.1',
+    });
+    await expect(local.updateCatalog('nope', {})).rejects.toThrow(
+      "The catalog 'nope' does not exist in pnpm-workspace.yaml",
+    );
+
+    // Comments and formatting are kept
+    expect(mockDir.content()).toEqual({
+      'pnpm-workspace.yaml': `packages:
+  - packages/*
+
+# The main line
+catalog:
+  '@backstage/core': ^1.2.0 # keep this
+  react: ^18.0.0
+
+catalogs:
+  backstage-next:
+    '@backstage/core': ^1.3.0-next.1
+`,
+    });
+  });
+
   it('should load the lockfile and name workspace packages from the workspace root', async () => {
     mockDir.setContent({
       'pnpm-lock.yaml': mockLockfile,
