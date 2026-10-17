@@ -17,12 +17,9 @@
 import { cli } from 'cleye';
 import { version as infoModuleVersion } from '../../package.json';
 import os from 'node:os';
-import { runOutput, targetPaths, findOwnPaths } from '@backstage/cli-common';
-import {
-  BackstagePackageJson,
-  YarnLockfile,
-  PackageGraph,
-} from '@backstage/cli-node';
+import { targetPaths, findOwnPaths } from '@backstage/cli-common';
+import { BackstagePackageJson, PackageGraph } from '@backstage/cli-node';
+import { detectPackageManager, Lockfile } from '@backstage/cli-node/alpha';
 import { minimatch } from 'minimatch';
 import fs from 'fs-extra';
 import type { CliCommandContext } from '@backstage/cli-node';
@@ -79,7 +76,7 @@ export default async ({ args, info }: CliCommandContext) => {
   const options = { include, format: format as 'text' | 'json' };
 
   await new Promise(async () => {
-    const yarnVersion = await runOutput(['yarn', '--version']);
+    const packageManager = await detectPackageManager();
     /* eslint-disable-next-line no-restricted-syntax */
     const isLocal = fs.existsSync(findOwnPaths(__dirname).resolve('./src'));
 
@@ -115,7 +112,14 @@ export default async ({ args, info }: CliCommandContext) => {
     const systemInfo = {
       os: `${os.type} ${os.release} - ${os.platform}/${os.arch}`,
       node: process.version,
-      yarn: yarnVersion,
+      // The yarn field is kept for existing consumers of the JSON output
+      ...(packageManager.name() === 'yarn'
+        ? { yarn: packageManager.version() }
+        : undefined),
+      packageManager: {
+        name: packageManager.name(),
+        version: packageManager.version(),
+      },
       ...(cliVersion
         ? { cli: { version: cliVersion, local: isLocal } }
         : undefined),
@@ -123,8 +127,17 @@ export default async ({ args, info }: CliCommandContext) => {
       backstage: backstageVersion,
     };
 
-    const lockfilePath = targetPaths.resolveWorkspaceRoot('yarn.lock');
-    const lockfile = await YarnLockfile.load(lockfilePath);
+    // A missing or unreadable lockfile only means that the versions of
+    // installed packages are unknown, for example when a build system owns
+    // the installs.
+    let lockfile: Lockfile | undefined;
+    try {
+      lockfile = await packageManager.loadLockfile();
+    } catch (error) {
+      console.warn(
+        `Failed to read ${packageManager.lockfileName()}, installed package versions are not listed, ${error}`,
+      );
+    }
     const targetPath = targetPaths.installationRootDir;
 
     // Get workspace package names and their versions
@@ -139,7 +152,7 @@ export default async ({ args, info }: CliCommandContext) => {
     }
 
     // Collect all package names from lockfile
-    const allPackages = [...lockfile.keys()];
+    const allPackages = lockfile ? [...lockfile.keys()] : [];
     const includePatterns = options.include || [];
 
     // Collect installed (non-local) packages
@@ -189,7 +202,7 @@ export default async ({ args, info }: CliCommandContext) => {
 
     // Helper to get versions for a package as an array of objects
     const getVersions = (dep: string): Array<{ version: string }> => {
-      const entries = lockfile.get(dep);
+      const entries = lockfile?.get(dep);
       if (!entries) {
         return [{ version: 'unknown' }];
       }
@@ -222,7 +235,7 @@ export default async ({ args, info }: CliCommandContext) => {
     // Print to console
     console.log(`OS:   ${systemInfo.os}`);
     console.log(`node: ${systemInfo.node}`);
-    console.log(`yarn: ${systemInfo.yarn}`);
+    console.log(`${packageManager.name()}: ${packageManager.version()}`);
     if (cliVersion) {
       console.log(`cli:  ${cliVersion} (${isLocal ? 'local' : 'installed'})`);
     }
