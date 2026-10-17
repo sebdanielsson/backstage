@@ -15,7 +15,9 @@ for guidance on creating Yarn patches for locally modified Backstage packages.
 
 The command verifies Yarn's native `patch:` protocol, available in Yarn 2 and
 later. It does not inspect patches managed by tools such as `patch-package` in
-Yarn Classic repositories.
+Yarn Classic repositories. The module is Yarn only. In a pnpm project the
+command reports that no `yarn.lock` was found. See
+[Package Managers](../package-managers.md).
 
 ## pm verify-patches
 

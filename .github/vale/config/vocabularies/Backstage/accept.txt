@@ -320,6 +320,7 @@ navbar
 neuro
 newrelic
 nginx
+node_modules
 nodegit
 nodemailer
 nodejs
@@ -374,6 +375,7 @@ pipx
 plaintext
 plantuml
 Platformize
+pnpm
 Podman
 posix
 postgres
