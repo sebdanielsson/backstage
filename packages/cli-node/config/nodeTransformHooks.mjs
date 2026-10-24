@@ -16,10 +16,9 @@
 
 import { dirname, extname, resolve as resolvePath } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { transformFile } from '@swc/core';
+import { transformFileSync } from '@swc/core';
 import { isBuiltin } from 'node:module';
-import { readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 // @ts-check
 
@@ -38,18 +37,87 @@ const moduleTypeTable = {
   '.js': undefined,
 };
 
+// The hooks are written as generators, so that the same logic can be used for
+// both the asynchronous hooks of module.register() and the synchronous hooks of
+// module.registerHooks(). Each `yield [a, b]` calls the next hook in the chain
+// with those arguments, and evaluates to its result, or throws its error.
+
 /** @type {import('module').ResolveHook} */
 export async function resolve(specifier, context, nextResolve) {
+  return runHookAsync(resolveSteps(specifier, context), nextResolve);
+}
+
+/** @type {import('module').LoadHook} */
+export async function load(url, context, nextLoad) {
+  return runHookAsync(loadSteps(url, context), nextLoad);
+}
+
+// Unlike the asynchronous hooks, the synchronous hooks also run for require()
+// calls. These are left to the CommonJS loader and the CommonJS hooks in
+// nodeTransform.cjs, as before.
+
+/** @type {import('module').ResolveHookSync} */
+export function resolveSync(specifier, context, nextResolve) {
+  if (isRequire(context)) {
+    return nextResolve(specifier, context);
+  }
+  return runHookSync(resolveSteps(specifier, context), nextResolve);
+}
+
+/** @type {import('module').LoadHookSync} */
+export function loadSync(url, context, nextLoad) {
+  if (isRequire(context)) {
+    return nextLoad(url, context);
+  }
+  return runHookSync(loadSteps(url, context), nextLoad);
+}
+
+// The conditions are an array, or a set in older Node.js versions
+function isRequire(context) {
+  return [...(context.conditions ?? [])].includes('require');
+}
+
+function runHookSync(steps, next) {
+  let step = steps.next();
+  while (!step.done) {
+    let result;
+    try {
+      result = next(...step.value);
+    } catch (error) {
+      step = steps.throw(error);
+      continue;
+    }
+    step = steps.next(result);
+  }
+  return step.value;
+}
+
+async function runHookAsync(steps, next) {
+  let step = steps.next();
+  while (!step.done) {
+    let result;
+    try {
+      result = await next(...step.value);
+    } catch (error) {
+      step = steps.throw(error);
+      continue;
+    }
+    step = steps.next(result);
+  }
+  return step.value;
+}
+
+function* resolveSteps(specifier, context) {
   // Built-in modules are handled by the default resolver
   if (isBuiltin(specifier)) {
-    return nextResolve(specifier, context);
+    return yield [specifier, context];
   }
 
   const ext = extname(specifier);
 
   // Unless there's an explicit import attribute, JSON files are loaded with our custom loader that's defined below.
   if (ext === '.json' && !context.importAttributes?.type) {
-    const jsonResult = await nextResolve(specifier, context);
+    const jsonResult = yield [specifier, context];
     return {
       ...jsonResult,
       format: 'commonjs',
@@ -60,13 +128,13 @@ export async function resolve(specifier, context, nextResolve) {
   // Anything else with an explicit extension is handled by the default
   // resolver, except that we help determine the module type where needed.
   if (ext !== '') {
-    return withDetectedModuleType(await nextResolve(specifier, context));
+    return withDetectedModuleType(yield [specifier, context]);
   }
 
   // Other external modules are handled by the default resolver, but again we
   // help determine the module type where needed.
   if (!specifier.startsWith('.')) {
-    return withDetectedModuleType(await nextResolve(specifier, context));
+    return withDetectedModuleType(yield [specifier, context]);
   }
 
   // The rest of this function handles the case of resolving imports that do not
@@ -81,16 +149,16 @@ export async function resolve(specifier, context, nextResolve) {
   try {
     // This is expected to throw, but in the event that this module specifier is
     // supported we prefer to use the default resolver.
-    return await nextResolve(specifier, context);
+    return yield [specifier, context];
   } catch (error) {
     if (error.code === 'ERR_UNSUPPORTED_DIR_IMPORT') {
       const spec = `${specifier}${specifier.endsWith('/') ? '' : '/'}index`;
-      const resolved = await resolveWithoutExt(spec, context, nextResolve);
+      const resolved = yield* resolveWithoutExt(spec, context);
       if (resolved) {
         return withDetectedModuleType(resolved);
       }
     } else if (error.code === 'ERR_MODULE_NOT_FOUND') {
-      const resolved = await resolveWithoutExt(specifier, context, nextResolve);
+      const resolved = yield* resolveWithoutExt(specifier, context);
       if (resolved) {
         return withDetectedModuleType(resolved);
       }
@@ -105,9 +173,9 @@ export async function resolve(specifier, context, nextResolve) {
  * Populates the `format` field in the resolved object based on the closest `package.json` file.
  *
  * @param {import('module').ResolveFnOutput} resolved
- * @returns {Promise<import('module').ResolveFnOutput>}
+ * @returns {import('module').ResolveFnOutput}
  */
-async function withDetectedModuleType(resolved) {
+function withDetectedModuleType(resolved) {
   // Already has an explicit format
   if (resolved.format) {
     return resolved;
@@ -133,12 +201,12 @@ async function withDetectedModuleType(resolved) {
   // either. As such we don't restrict the file format at this point.
 
   // TODO(Rugvip): Does this need caching? kept it simple for now but worth exploring
-  const packageJsonPath = await findPackageJSON(fileURLToPath(resolved.url));
+  const packageJsonPath = findPackageJSON(fileURLToPath(resolved.url));
   if (!packageJsonPath) {
     return resolved;
   }
 
-  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
   return {
     ...resolved,
     format: packageJson.type ?? DEFAULT_MODULE_FORMAT,
@@ -150,9 +218,9 @@ async function withDetectedModuleType(resolved) {
  *
  * TODO(Rugvip): This can be replaced with the Node.js built-in with the same name once it is stable.
  * @param {string} startPath
- * @returns {Promise<string | undefined>}
+ * @returns {string | undefined}
  */
-async function findPackageJSON(startPath) {
+function findPackageJSON(startPath) {
   let path = startPath;
 
   // Some confidence check to avoid infinite loop
@@ -174,14 +242,16 @@ async function findPackageJSON(startPath) {
   );
 }
 
-/** @type {import('module').ResolveHook} */
-async function resolveWithoutExt(specifier, context, nextResolve) {
+function* resolveWithoutExt(specifier, context) {
   for (const tryExt of SRC_EXTS) {
     try {
-      const resolved = await nextResolve(specifier + tryExt, {
-        ...context,
-        format: 'commonjs',
-      });
+      const resolved = yield [
+        specifier + tryExt,
+        {
+          ...context,
+          format: 'commonjs',
+        },
+      ];
       return {
         ...resolved,
         format: moduleTypeTable[tryExt] ?? resolved.format,
@@ -193,32 +263,30 @@ async function resolveWithoutExt(specifier, context, nextResolve) {
   return undefined;
 }
 
-/** @type {import('module').LoadHook} */
-export async function load(url, context, nextLoad) {
+function* loadSteps(url, context) {
   // Non-file URLs are handled by the default loader
   if (!url.startsWith('file://')) {
-    return nextLoad(url, context);
+    return yield [url, context];
   }
 
   // JSON files loaded as CommonJS are handled by this custom loader, because
-  // the default one doesn't work. For JSON loading to work we'd need the
-  // synchronous hooks that aren't supported yet, or avoid using the CommonJS
-  // compatibility.
+  // the default one doesn't work. They're returned in the JSON format rather
+  // than wrapped in CommonJS, because with the synchronous hooks, newer
+  // Node.js versions parse CommonJS source for a .json file as JSON.
   if (
     context.format === 'commonjs' &&
     context.importAttributes?.type === 'json'
   ) {
     try {
-      // TODO(Rugvip): Make sure this is valid JSON
-      const content = await readFile(fileURLToPath(url), 'utf8');
+      const content = readFileSync(fileURLToPath(url), 'utf8');
       return {
-        source: `module.exports = (${content})`,
-        format: 'commonjs',
+        source: content,
+        format: 'json',
         shortCircuit: true,
       };
     } catch {
       // Let the default loader generate the error
-      return nextLoad(url, context);
+      return yield [url, context];
     }
   }
 
@@ -226,7 +294,7 @@ export async function load(url, context, nextLoad) {
 
   // Non-TS files are handled by the default loader
   if (!TS_EXTS.includes(ext)) {
-    return nextLoad(url, context);
+    return yield [url, context];
   }
 
   const format = context.format ?? DEFAULT_MODULE_FORMAT;
@@ -250,9 +318,9 @@ export async function load(url, context, nextLoad) {
   // however use compatibility mode for the more explicit .cts file extension,
   // allows for a way to opt-in to the new behavior.
   //
-  // TODO(Rugvip): Once the synchronous hooks API is available for us to use, we might be able to adopt that instead
+  // TODO(Rugvip): Once the synchronous hooks are used for all supported Node.js versions, we might be able to adopt that instead
   if (format === 'commonjs' && ext !== '.cts') {
-    return nextLoad(url, { ...context, format });
+    return yield [url, { ...context, format }];
   }
 
   // If the Node.js version we're running supports TypeScript, i.e. type
@@ -264,10 +332,10 @@ export async function load(url, context, nextLoad) {
     format === 'module-typescript' ||
     (format === 'module-commonjs' && ext !== '.ts')
   ) {
-    return nextLoad(url, { ...context, format });
+    return yield [url, { ...context, format }];
   }
 
-  const transformed = await transformFile(fileURLToPath(url), {
+  const transformed = transformFileSync(fileURLToPath(url), {
     sourceMaps: 'inline',
     module: {
       type: format === 'module' ? 'es6' : 'commonjs',

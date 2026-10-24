@@ -100,6 +100,15 @@ describe('node runtime module transforms', () => {
       dyn: exportValues.all,
     });
   });
+
+  it('should load JSON files without import attributes', async () => {
+    const data = { value: 'a' };
+    expect(loadFixture('pkg-json/print.ts')).toEqual({
+      data,
+      dynamicData: data,
+      fromCommonJs: data,
+    });
+  });
 });
 
 describe('Jest runtime module transforms', () => {

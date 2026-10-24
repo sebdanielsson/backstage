@@ -84,4 +84,14 @@ addHook(
 // Register module hooks, used by "type": "module" in package.json, .mjs and
 // .mts files, as well as dynamic import(...)s, although dynamic imports will be
 // handled be the CommonJS hooks in this file if what it points to is CommonJS.
-Module.register('./nodeTransformHooks.mjs', pathToFileURL(__filename));
+// Node.js 26 deprecates module.register(), so the synchronous hooks are used
+// there instead. Older versions keep using module.register(), because before
+// Node.js 24.11.1 and 25.1.0, CommonJS files that the synchronous hooks pass on
+// are loaded without the CommonJS hooks above.
+const nodeMajorVersion = Number(process.versions.node.split('.')[0]);
+if (typeof Module.registerHooks === 'function' && nodeMajorVersion >= 26) {
+  const { resolveSync, loadSync } = require('./nodeTransformHooks.mjs');
+  Module.registerHooks({ resolve: resolveSync, load: loadSync });
+} else {
+  Module.register('./nodeTransformHooks.mjs', pathToFileURL(__filename));
+}
