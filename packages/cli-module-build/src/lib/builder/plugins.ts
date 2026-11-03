@@ -17,8 +17,12 @@
 import fs from 'fs-extra';
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
+import postcssLoadConfig from 'postcss-load-config';
+import postcssModules from 'postcss-modules';
 import {
+  basename,
   dirname,
+  extname,
   resolve as resolvePath,
   relative as relativePath,
 } from 'node:path';
@@ -224,6 +228,123 @@ export function cssEntryPoints(options: CssEntryPointsOptions): Plugin {
           source: result.css,
         });
       }
+    },
+  };
+}
+
+// The module that adds styles to the document, shared by all CSS imports
+const STYLE_INJECT_ID = '\0backstage-style-inject';
+const STYLE_INJECT_SOURCE = `export default function styleInject(css) {
+  if (!css || typeof document === 'undefined') {
+    return;
+  }
+  const style = document.createElement('style');
+  style.appendChild(document.createTextNode(css));
+  document.head.appendChild(style);
+}
+`;
+
+const CSS_FILE_PATTERN = /\.(?:css|sss|pcss)$/;
+const CSS_MODULE_PATTERN = /\.module\.[a-z]{2,6}$/;
+
+type PostcssConfig = Pick<postcssLoadConfig.Result, 'plugins' | 'options'>;
+
+async function loadPostcssConfig(file: string): Promise<PostcssConfig> {
+  // The same context that rollup-plugin-postcss gave config functions, which
+  // can depend on the file
+  const ctx: postcssLoadConfig.ConfigContext & {
+    file: { extname: string; dirname: string; basename: string };
+    options: {};
+  } = {
+    file: {
+      extname: extname(file),
+      dirname: dirname(file),
+      basename: basename(file),
+    },
+    options: {},
+  };
+  try {
+    const { plugins, options } = await postcssLoadConfig(ctx, dirname(file));
+    return { plugins, options };
+  } catch (error) {
+    if (error?.message?.includes('No PostCSS Config found')) {
+      return { plugins: [], options: {} };
+    }
+    throw error;
+  }
+}
+
+interface CssImportsOptions {
+  /**
+   * Generates the class names of CSS modules, see the option with the same
+   * name in postcss-modules.
+   */
+  generateScopedName(name: string, filename: string, css: string): string;
+}
+
+/**
+ * Rollup plugin that turns imported CSS files into modules that add their
+ * styles to the document head when loaded. For CSS modules, `*.module.css`,
+ * the default export maps the class names in the file to the generated ones.
+ * For other CSS files it is the CSS itself. A PostCSS config file in the
+ * directory of the CSS file or above it is applied.
+ */
+export function cssImports(options: CssImportsOptions): Plugin {
+  return {
+    name: 'backstage-css-imports',
+
+    resolveId(source) {
+      return source === STYLE_INJECT_ID ? source : null;
+    },
+
+    load(id) {
+      return id === STYLE_INJECT_ID ? STYLE_INJECT_SOURCE : null;
+    },
+
+    async transform(code, id) {
+      if (!CSS_FILE_PATTERN.test(id)) {
+        return null;
+      }
+
+      const { plugins, options: processOptions } = await loadPostcssConfig(id);
+
+      let classNames: Record<string, string> | undefined;
+      const result = await postcss([
+        ...(CSS_MODULE_PATTERN.test(id)
+          ? [
+              postcssModules({
+                generateScopedName: options.generateScopedName,
+                getJSON(_file, json) {
+                  classNames = json;
+                },
+              }),
+            ]
+          : []),
+        ...plugins,
+        // Without any plugins PostCSS skips parsing, which would let syntax
+        // errors through
+        { postcssPlugin: 'backstage-css-imports' },
+      ]).process(code, { ...processOptions, from: id, to: id, map: false });
+
+      for (const warning of result.warnings()) {
+        this.warn(warning.toString());
+      }
+      for (const message of result.messages) {
+        if (message.type === 'dependency') {
+          this.addWatchFile(message.file);
+        }
+      }
+
+      return {
+        code: [
+          `import styleInject from ${JSON.stringify(STYLE_INJECT_ID)};`,
+          `const css = ${JSON.stringify(result.css)};`,
+          'styleInject(css);',
+          `export default ${classNames ? JSON.stringify(classNames) : 'css'};`,
+          '',
+        ].join('\n'),
+        map: { mappings: '' },
+      };
     },
   };
 }
