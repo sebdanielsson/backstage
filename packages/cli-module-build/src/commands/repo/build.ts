@@ -62,10 +62,6 @@ export default async ({ args, info }: CliCommandContext) => {
 
   let packages = await PackageGraph.listTargetPackages();
 
-  const webpack = process.env.LEGACY_WEBPACK_BUILD
-    ? (require('webpack') as typeof import('webpack'))
-    : undefined;
-
   if (since) {
     const graph = PackageGraph.fromPackages(packages);
     const changedPackages = await graph.listChangedPackages({
@@ -155,7 +151,6 @@ export default async ({ args, info }: CliCommandContext) => {
             ? (configPaths as string[])
             : [],
           writeStats: Boolean(buildOptions.stats),
-          webpack,
         });
       },
     });

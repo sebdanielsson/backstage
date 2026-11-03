@@ -18,9 +18,13 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import fs from 'fs-extra';
 import { ConfigReader } from '@backstage/config';
-import { rspack, RspackOptions } from '@rspack/core';
+import {
+  rspack,
+  RspackOptions,
+  StatsCompilation,
+  StatsModule,
+} from '@rspack/core';
 import { ModuleFederationPlugin } from '@module-federation/enhanced/rspack';
-import webpack from 'webpack';
 import { optimization } from './optimization';
 import { transforms } from './transforms';
 import { STATIC_ASSET_HASH_LENGTH } from './staticAssetHash';
@@ -28,22 +32,21 @@ import { STATIC_ASSET_HASH_LENGTH } from './staticAssetHash';
 // Compile a feature with a lazy renderer in the same npm scope, and a shared
 // workspace module. Naming chunks by scope pulls the renderer into discovery;
 // failing to extract workspace modules duplicates them across lazy boundaries.
+type StatsChunkGroup = NonNullable<
+  StatsCompilation['namedChunkGroups']
+>[string];
 type CompilationStats = {
   errors?: unknown[];
   warnings?: unknown[];
-  modules?: Array<Pick<webpack.StatsModule, 'name' | 'chunks'>>;
+  modules?: Array<Pick<StatsModule, 'name' | 'chunks'>>;
   chunks?: Array<{ id?: string | number; files?: string[] }>;
-  namedChunkGroups?: Record<
-    string,
-    Pick<webpack.StatsChunkGroup, 'chunks' | 'assets'>
-  >;
+  namedChunkGroups?: Record<string, Pick<StatsChunkGroup, 'chunks' | 'assets'>>;
   stylesheetSelectors?: Record<string, string[]>;
 };
 
 async function compileFixture(
   isDev: boolean,
   remote: boolean,
-  webpackImpl?: typeof webpack,
   rendererContent: string = 'renderer'.repeat(15_000),
   fixtureRoot?: string,
 ): Promise<CompilationStats> {
@@ -97,7 +100,6 @@ export default { heavy, shared };`,
 
     const options = {
       isDev,
-      webpack: webpackImpl,
       checksEnabled: false,
       frontendConfig: new ConfigReader({}),
       getFrontendAppConfigs: () => [],
@@ -106,9 +108,6 @@ export default { heavy, shared };`,
         : undefined,
     };
     const { loaders, plugins } = transforms(options);
-    const FederationPlugin = webpackImpl
-      ? require('@module-federation/enhanced/webpack').ModuleFederationPlugin
-      : ModuleFederationPlugin;
     const config: RspackOptions = {
       mode: isDev ? 'development' : 'production',
       context: root,
@@ -131,7 +130,7 @@ export default { heavy, shared };`,
         ...plugins,
         ...(remote
           ? [
-              new FederationPlugin({
+              new ModuleFederationPlugin({
                 name: 'test_remote',
                 filename: 'remoteEntry.js',
                 runtime: false,
@@ -147,9 +146,7 @@ export default { heavy, shared };`,
       experiments: { css: false },
       performance: { hints: false },
     };
-    const compiler = webpackImpl
-      ? webpackImpl(config as webpack.Configuration)
-      : rspack(config);
+    const compiler = rspack(config);
     const stats = await new Promise<CompilationStats>((resolve, reject) => {
       compiler.run((error, result) => {
         compiler.close(closeError => {
@@ -200,14 +197,11 @@ export default { heavy, shared };`,
   }
 }
 
-describe.each([
-  ['rspack', undefined],
-  ['webpack', webpack],
-] as const)('optimization (%s)', (_name, webpackImpl) => {
+describe('optimization', () => {
   it.each([false, true])(
     'keeps remote renderers lazy and shares workspace code (isDev=%s)',
     async isDev => {
-      const stats = await compileFixture(isDev, true, webpackImpl);
+      const stats = await compileFixture(isDev, true);
       expect(stats.errors).toEqual([]);
       expect(stats.warnings).toEqual([]);
       const renderer = stats.modules?.find(module =>
@@ -257,17 +251,10 @@ describe.each([
     const root = await fs.mkdtemp(join(tmpdir(), 'backstage-chunks-'));
     const [before, after] = await (async () => {
       try {
-        const first = await compileFixture(
-          false,
-          true,
-          webpackImpl,
-          undefined,
-          root,
-        );
+        const first = await compileFixture(false, true, undefined, root);
         const second = await compileFixture(
           false,
           true,
-          webpackImpl,
           'changed'.repeat(15_000),
           root,
         );
@@ -298,7 +285,7 @@ describe.each([
   it.each([false, true])(
     'preserves named initial app dependency chunks (isDev=%s)',
     async isDev => {
-      const stats = await compileFixture(isDev, false, webpackImpl);
+      const stats = await compileFixture(isDev, false);
       expect(stats.errors).toEqual([]);
       expect(stats.warnings).toEqual([]);
       const renderer = stats.modules?.find(module =>

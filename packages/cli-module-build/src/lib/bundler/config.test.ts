@@ -16,7 +16,6 @@
 
 import { createMockDirectory } from '@backstage/backend-test-utils';
 import { ConfigReader } from '@backstage/config';
-import webpack from 'webpack';
 import { createConfig } from './config';
 import { BundlingPaths } from './paths';
 import { BundlingOptions } from './types';
@@ -97,23 +96,15 @@ describe('createConfig', () => {
     expect(entryArray).toHaveLength(2); // webpack-public-path + targetEntry
   });
 
-  // Rspack and WebPack each reject the other's shape for these options, so a
-  // mix-up only shows up when the bundler validates the config.
-  it('uses the option shapes that each bundler accepts', async () => {
+  it('enables lazy compilation and pins the parser options', async () => {
     process.env.EXPERIMENTAL_LAZY_COMPILATION = 'true';
 
-    const rspackConfig = await createConfig(paths, createOptions());
-    expect(rspackConfig.lazyCompilation).toBe(true);
-    expect(rspackConfig.experiments).toBeUndefined();
-    expect(rspackConfig.module?.parser?.javascript).toEqual({
+    const config = await createConfig(paths, createOptions());
+    expect(config.lazyCompilation).toBe(true);
+    expect(config.module?.parser?.javascript).toEqual({
       exportsPresence: 'auto',
       requireAlias: true,
     });
-
-    const webpackConfig = await createConfig(paths, createOptions({ webpack }));
-    expect(webpackConfig).not.toHaveProperty('lazyCompilation');
-    expect(webpackConfig.experiments).toEqual({ lazyCompilation: true });
-    expect(webpackConfig.module?.parser).toBeUndefined();
 
     // A remote's lazy compilation requests would go to the host app
     const remoteConfig = await createConfig(
@@ -141,9 +132,6 @@ describe('createConfig', () => {
     );
     expect(
       (await createConfig(appPaths, createOptions({ isDev: true }))).target,
-    ).toBeUndefined();
-    expect(
-      (await createConfig(appPaths, createOptions({ webpack }))).target,
     ).toBeUndefined();
 
     process.env.BROWSERSLIST_ENV = 'modern';

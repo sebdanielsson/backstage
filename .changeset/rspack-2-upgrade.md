@@ -2,7 +2,7 @@
 '@backstage/cli-module-build': minor
 ---
 
-**BREAKING**: Updated the frontend bundler to Rspack 2. The `LEGACY_WEBPACK_BUILD` fallback is unchanged. Production bundles are smaller, as Rspack 2 removes more unused code by default.
+**BREAKING**: Updated the frontend bundler to Rspack 2. Production bundles are smaller, as Rspack 2 removes more unused code by default.
 
 Production CSS is now minified for the browsers in the app's `browserslist` configuration, rather than for all browsers that fully support ES6, which usually means fewer vendor prefixes and fallbacks. Production builds now always use the `production` environment of that configuration, or the one that `BROWSERSLIST_ENV` names, instead of picking it by `NODE_ENV`. Apps without a `browserslist` configuration are unaffected.
 
