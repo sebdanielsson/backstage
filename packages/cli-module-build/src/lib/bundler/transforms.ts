@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-import {
-  RuleSetRule,
-  RspackPluginInstance,
-  CssExtractRspackPlugin,
-  WebpackPluginInstance,
-} from '@rspack/core';
+import { RuleSetRule } from '@rspack/core';
 import { STATIC_ASSET_HASH_LENGTH } from './staticAssetHash';
 
 type Transforms = {
   loaders: RuleSetRule[];
-  plugins: Array<RspackPluginInstance | WebpackPluginInstance>;
 };
 
 type TransformOptions = {
@@ -34,23 +28,6 @@ type TransformOptions = {
 
 export const transforms = (options: TransformOptions): Transforms => {
   const { isDev, isBackend } = options;
-
-  // This ensures that styles inserted from the style-loader and any
-  // async style chunks are always given lower priority than JSS styles.
-  // Note that this function is stringified and executed in the browser
-  // after transpilation, so stick to simple syntax
-  function insertBeforeJssStyles(element: any) {
-    const head = document.head;
-    // This makes sure that any style elements we insert get put before the
-    // dynamic styles from JSS, such as the ones from `makeStyles()`.
-    // TODO(Rugvip): This will likely break in material-ui v5, keep an eye on it.
-    const firstJssNode = head.querySelector('style[data-jss]');
-    if (!firstJssNode) {
-      head.appendChild(element);
-    } else {
-      head.insertBefore(element, firstJssNode);
-    }
-  }
 
   const loaders = [
     {
@@ -153,36 +130,25 @@ export const transforms = (options: TransformOptions): Transforms => {
     },
     {
       test: /\.css$/i,
-      use: [
-        isDev
-          ? {
-              loader: require.resolve('style-loader'),
-              options: {
-                insert: insertBeforeJssStyles,
-              },
-            }
-          : CssExtractRspackPlugin.loader,
-        {
-          loader: require.resolve('css-loader'),
-          options: {
-            sourceMap: true,
-          },
-        },
-      ],
+      type: 'css/auto',
+      parser: {
+        // Keeps the default export of CSS modules, as in
+        // `import styles from './styles.module.css'`
+        namedExports: false,
+        // Development builds inject styles from JavaScript, while production
+        // builds emit separate stylesheets
+        exportType: isDev ? 'style' : 'link',
+        // Only rename class names, IDs and keyframes in CSS modules, like
+        // css-loader did. This keeps for example custom properties global, so
+        // that they can be set from outside the module.
+        dashedIdents: false,
+        customIdents: false,
+        container: false,
+        grid: false,
+        function: false,
+      },
     },
   ];
 
-  const plugins = new Array<RspackPluginInstance | WebpackPluginInstance>();
-
-  if (!isDev) {
-    plugins.push(
-      new CssExtractRspackPlugin({
-        filename: `static/[name].[contenthash:${STATIC_ASSET_HASH_LENGTH}].css`,
-        chunkFilename: `static/[name].[id].[contenthash:${STATIC_ASSET_HASH_LENGTH}].css`,
-        insert: insertBeforeJssStyles, // Only applies to async chunks
-      }),
-    );
-  }
-
-  return { loaders, plugins };
+  return { loaders };
 };

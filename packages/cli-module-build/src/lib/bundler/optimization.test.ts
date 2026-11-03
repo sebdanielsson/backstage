@@ -107,7 +107,7 @@ export default { heavy, shared };`,
         ? { name: 'test_remote', sharedDependencies: {} }
         : undefined,
     };
-    const { loaders, plugins } = transforms(options);
+    const { loaders } = transforms(options);
     const config: RspackOptions = {
       mode: isDev ? 'development' : 'production',
       context: root,
@@ -127,7 +127,6 @@ export default { heavy, shared };`,
       },
       module: { rules: loaders },
       plugins: [
-        ...plugins,
         ...(remote
           ? [
               new ModuleFederationPlugin({
@@ -143,7 +142,6 @@ export default { heavy, shared };`,
             ]
           : []),
       ],
-      experiments: { css: false },
       performance: { hints: false },
     };
     const compiler = rspack(config);
@@ -225,6 +223,14 @@ describe('optimization', () => {
       );
       expect(shared?.chunks).toHaveLength(1);
       expect(featureChunks).toContain(shared?.chunks?.[0]);
+      // Stylesheets stay in the chunks of the modules that import them
+      const stylesheets = stats.modules?.filter(module =>
+        /\/(first|second)\.css\b/.test(module.name ?? ''),
+      );
+      expect(stylesheets).toHaveLength(2);
+      for (const stylesheet of stylesheets ?? []) {
+        expect(stylesheet.chunks).not.toContain(shared?.chunks?.[0]);
+      }
       expect(
         stats.namedChunkGroups?.__federation_expose_other.chunks,
       ).toContain(shared?.chunks?.[0]);

@@ -56,7 +56,7 @@ yarn build --module-federation
 
 When building a plugin as a module federation remote, the CLI:
 
-1. Resolves versions of the shared dependencies based on the monorepo dependencies (done automatically by the Rspack/Webpack module federation plugin)
+1. Resolves versions of the shared dependencies based on the monorepo dependencies (done automatically by the Rspack module federation plugin)
 2. Produces the bundle assets in the `dist` folder, including:
    - a `mf-manifest.json` file which contains the module federation manifest
    - a `remoteEntry.js` file which is the main entrypoint for the remote module
