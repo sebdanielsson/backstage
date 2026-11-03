@@ -54,13 +54,13 @@ export function translateLegacyProxyOptions(
     if (path === undefined) {
       return rest;
     }
-    // `context` rather than `pathFilter`, as the legacy WebPack dev server
-    // understands `context` too, and fails every proxied request without it.
+    // `context` rather than `pathFilter`, as older versions of the Backstage
+    // CLI understand `context` too, and fail every proxied request without it.
     outdated.add('`path` is no longer supported, rename it to `context`');
 
     // Both current options win over `path`: `pathFilter` by spread order, and
-    // `context` by the check, as the legacy WebPack dev server also prefers
-    // `context` over `path`.
+    // `context` by the check, as older versions of the Backstage CLI also
+    // prefer `context` over `path`.
     return rest.context === undefined ? { pathFilter: path, ...rest } : rest;
   });
 

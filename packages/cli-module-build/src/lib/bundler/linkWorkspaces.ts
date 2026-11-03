@@ -25,10 +25,7 @@ import { targetPaths } from '@backstage/cli-common';
  * always be used in place of the ones in the target workspace, with the exception
  * of react and react-dom which are always resolved from the target workspace.
  */
-export async function createWorkspaceLinkingPlugins(
-  bundler: typeof rspack,
-  workspace: string,
-) {
+export async function createWorkspaceLinkingPlugins(workspace: string) {
   const { packages: linkedPackages, root: linkedRoot } = await getPackages(
     workspace,
   );
@@ -43,12 +40,12 @@ export async function createWorkspaceLinkingPlugins(
   return [
     // Any imports of a package that is present in the linked workspace will
     // be redirected to be resolved within the context of the linked workspace
-    new bundler.NormalModuleReplacementPlugin(replacementRegex, resource => {
+    new rspack.NormalModuleReplacementPlugin(replacementRegex, resource => {
       resource.context = linkedRoot.dir;
     }),
     // react and react-dom are always resolved from the target directory
     // Note: this often requires that the linked and target workspace use the same versions of React
-    new bundler.NormalModuleReplacementPlugin(
+    new rspack.NormalModuleReplacementPlugin(
       /^react(?:-router)?(?:-dom)?$/,
       resource => {
         if (!relativePath(linkedRoot.dir, resource.context).startsWith('..')) {

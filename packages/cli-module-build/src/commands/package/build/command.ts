@@ -82,10 +82,6 @@ export default async ({ args, info }: CliCommandContext) => {
     args,
   );
 
-  const webpack = process.env.LEGACY_WEBPACK_BUILD
-    ? (require('webpack') as typeof import('webpack'))
-    : undefined;
-
   const resolvedRole = await findRoleFromCommand({ role });
 
   if (resolvedRole === 'frontend' || resolvedRole === 'backend') {
@@ -101,7 +97,6 @@ export default async ({ args, info }: CliCommandContext) => {
         targetDir: targetPaths.dir,
         configPaths,
         writeStats: Boolean(stats),
-        webpack,
       });
     }
     return buildBackend({
@@ -132,7 +127,6 @@ export default async ({ args, info }: CliCommandContext) => {
       configPaths: [],
       writeStats: Boolean(stats),
       isModuleFederationRemote,
-      webpack,
     });
   }
 

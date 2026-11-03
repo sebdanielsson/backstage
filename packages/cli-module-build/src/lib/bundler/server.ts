@@ -69,12 +69,10 @@ DEPRECATION WARNING: React Router Beta is deprecated and support for it will be 
 
       // For the Rspack server it's not enough to invalidate, we also need to
       // tell the browser to reload, which we do with a 'static-changed' message
-      if (!process.env.LEGACY_WEBPACK_BUILD) {
-        devServer.sendMessage(
-          devServer.webSocketServer?.clients ?? [],
-          'static-changed',
-        );
-      }
+      devServer.sendMessage(
+        devServer.webSocketServer?.clients ?? [],
+        'static-changed',
+      );
     }
   };
 
@@ -133,17 +131,12 @@ DEPRECATION WARNING: React Router Beta is deprecated and support for it will be 
       },
     });
 
-  const webpack = process.env.LEGACY_WEBPACK_BUILD
-    ? (require('webpack') as typeof import('webpack'))
-    : undefined;
-
   const commonConfigOptions = {
     ...options,
     checksEnabled: options.checksEnabled,
     isDev: true,
     baseUrl: url,
     frontendConfig,
-    webpack,
     getFrontendAppConfigs: () => {
       return latestFrontendAppConfigs;
     },
@@ -155,15 +148,6 @@ DEPRECATION WARNING: React Router Beta is deprecated and support for it will be 
     deferredEntryPoints: [...detectedModulesEntryPoint],
     moduleFederationRemote: options.moduleFederationRemote,
   });
-
-  const bundler = (webpack ?? rspack) as typeof rspack;
-  const DevServer: typeof RspackDevServer = webpack
-    ? require('webpack-dev-server')
-    : RspackDevServer;
-
-  if (webpack) {
-    console.log(chalk.yellow(`⚠️  WARNING: Using legacy WebPack dev server.`));
-  }
 
   const publicPaths = await resolveOptionalBundlingPaths({
     entry: 'src/index-public-experimental',
@@ -177,10 +161,10 @@ DEPRECATION WARNING: React Router Beta is deprecated and support for it will be 
     );
   }
   const compiler = publicPaths
-    ? bundler([config, await createConfig(publicPaths, commonConfigOptions)])
-    : bundler(config);
+    ? rspack([config, await createConfig(publicPaths, commonConfigOptions)])
+    : rspack(config);
 
-  devServer = new DevServer(
+  devServer = new RspackDevServer(
     {
       hot: !process.env.CI,
       devMiddleware: {
@@ -222,9 +206,6 @@ DEPRECATION WARNING: React Router Beta is deprecated and support for it will be 
       // the dev middleware: after the host header checks, and before the proxy
       // entries, which could otherwise forward its trigger requests.
       setupMiddlewares: middlewares => {
-        if (webpack) {
-          return middlewares;
-        }
         const lazyCompilation = lazyCompilationMiddleware(compiler);
         const devMiddlewareIndex = middlewares.findIndex(
           middleware =>
@@ -240,11 +221,7 @@ DEPRECATION WARNING: React Router Beta is deprecated and support for it will be 
           ...middlewares.slice(devMiddlewareIndex),
         ];
       },
-      // The legacy WebPack dev server runs the `http-proxy-middleware` major
-      // that accepts the old option names, so it needs no translation.
-      proxy: webpack
-        ? targetPkg.proxy
-        : translateLegacyProxyOptions(targetPkg.proxy),
+      proxy: translateLegacyProxyOptions(targetPkg.proxy),
       // When the dev server is behind a proxy, the host and public hostname differ
       allowedHosts: [url.hostname],
       client: {
