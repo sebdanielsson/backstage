@@ -15,14 +15,16 @@
  */
 
 import fs from 'fs-extra';
+import { basename } from 'node:path';
 import {
   NormalizedOutputOptions,
   OutputAsset,
   OutputChunk,
   PluginContext,
+  rollup,
 } from 'rollup';
 
-import { forwardFileImports, cssEntryPoints } from './plugins';
+import { forwardFileImports, cssEntryPoints, cssImports } from './plugins';
 import { createMockDirectory } from '@backstage/backend-test-utils';
 
 // Helper to call generateBundle hook which can be a function or ObjectHook
@@ -344,5 +346,112 @@ describe('cssEntryPoints', () => {
       );
       expect(emittedFiles).toHaveLength(2);
     });
+  });
+});
+
+describe('cssImports', () => {
+  const mockDir = createMockDirectory();
+
+  async function build(files: Record<string, string>, input = 'index.js') {
+    mockDir.setContent(files);
+    const bundle = await rollup({
+      input: mockDir.resolve(input),
+      plugins: [
+        cssImports({
+          generateScopedName: (name, filename) =>
+            `${basename(filename, '.module.css')}_${name}`,
+        }),
+      ],
+    });
+    try {
+      const { output } = await bundle.generate({ format: 'es' });
+      return output[0].code;
+    } finally {
+      await bundle.close();
+    }
+  }
+
+  it('should turn CSS imports into modules that inject their styles', async () => {
+    const code = await build({
+      'index.js': `
+        import styles from './Button.module.css';
+        import globalCss from './global.css';
+        export { styles, globalCss };
+      `,
+      'Button.module.css': `
+        .base { color: red; }
+        .primary { composes: base; font-weight: bold; }
+        .shared { composes: text from './Text.module.css'; }
+        :global(.outside) { color: blue; }
+      `,
+      'Text.module.css': '.text { font-size: 1rem; }',
+      'global.css': '.global { margin: 0; }',
+    });
+
+    expect(code).toContain("document.createElement('style')");
+    expect(code).toContain('.Button_base { color: red; }');
+    expect(code).toContain('.Button_primary { font-weight: bold; }');
+    expect(code).toContain('.outside { color: blue; }');
+    expect(code).toContain('.Text_text { font-size: 1rem; }');
+    expect(code).toContain(
+      '{"base":"Button_base","primary":"Button_primary Button_base","shared":"Button_shared Text_text"}',
+    );
+    expect(code).toContain('.global { margin: 0; }');
+    expect(code.match(/^styleInject\(/gm)).toHaveLength(2);
+  });
+
+  it('should fail on invalid CSS', async () => {
+    await expect(
+      build({
+        'index.js': `import './broken.css';`,
+        'broken.css': '.broken { color: red;',
+      }),
+    ).rejects.toThrow('Unclosed block');
+  });
+
+  it('should apply the PostCSS config of the directory', async () => {
+    const code = await build({
+      'postcss.config.js': `module.exports = {
+        plugins: [
+          {
+            postcssPlugin: 'test',
+            Once(root) {
+              root.append({ text: 'from config' });
+            },
+          },
+        ],
+      };`,
+      'index.js': `import './global.css';`,
+      'global.css': '.global { margin: 0; }',
+    });
+
+    expect(code).toContain('/* from config */');
+  });
+
+  it('should give config functions the context of each file', async () => {
+    // Separate directory, as Node caches config files by path
+    const code = await build(
+      {
+        'per-file/postcss.config.js': `module.exports = ctx => ({
+        plugins: [
+          {
+            postcssPlugin: 'test',
+            Once(root) {
+              root.append({
+                text: ctx.file.basename + ' ' + JSON.stringify(ctx.options),
+              });
+            },
+          },
+        ],
+      });`,
+        'per-file/index.js': `import './a.css'; import './b.css';`,
+        'per-file/a.css': '.a { margin: 0; }',
+        'per-file/b.css': '.b { margin: 0; }',
+      },
+      'per-file/index.js',
+    );
+
+    expect(code).toContain('/* a.css {} */');
+    expect(code).toContain('/* b.css {} */');
   });
 });
