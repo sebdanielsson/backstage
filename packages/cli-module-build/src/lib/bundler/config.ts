@@ -16,7 +16,12 @@
 
 import { resolve as resolvePath } from 'node:path';
 import { BundlingOptions, ModuleFederationRemoteOptions } from './types';
-import { rspack, Configuration } from '@rspack/core';
+import {
+  rspack,
+  Configuration,
+  RspackPluginInstance,
+  WebpackPluginInstance,
+} from '@rspack/core';
 
 import { BundlingPaths } from './paths';
 import { Config } from '@backstage/config';
@@ -121,7 +126,8 @@ export async function createConfig(
     publicSubPath = '',
   } = options;
 
-  const { plugins, loaders } = transforms(options);
+  const { loaders } = transforms(options);
+  const plugins = new Array<RspackPluginInstance | WebpackPluginInstance>();
   // Any package that is part of the monorepo but outside the monorepo root dir need
   // separate resolution logic.
 
@@ -312,6 +318,8 @@ export async function createConfig(
       chunkFilename: isDev
         ? '[name].chunk.js'
         : `static/[name].[contenthash:${STATIC_ASSET_HASH_LENGTH}].chunk.js`,
+      cssFilename: `static/[name].[contenthash:${STATIC_ASSET_HASH_LENGTH}].css`,
+      cssChunkFilename: `static/[name].[id].[contenthash:${STATIC_ASSET_HASH_LENGTH}].css`,
       ...(isDev
         ? {
             devtoolModuleFilenameTemplate: (info: any) =>
