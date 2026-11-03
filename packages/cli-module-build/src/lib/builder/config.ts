@@ -25,7 +25,6 @@ import {
 } from 'node:path';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
-import postcss from 'rollup-plugin-postcss';
 import esbuild from 'rollup-plugin-esbuild';
 import dts from 'rollup-plugin-dts';
 import json from '@rollup/plugin-json';
@@ -37,7 +36,7 @@ import {
   OutputPlugin,
 } from 'rollup';
 
-import { forwardFileImports, cssEntryPoints } from './plugins';
+import { forwardFileImports, cssEntryPoints, cssImports } from './plugins';
 import { BuildOptions, Output } from './types';
 import { targetPaths } from '@backstage/cli-common';
 
@@ -166,7 +165,7 @@ export async function makeRollupConfigs(
     const mainFields = ['module', 'main'];
 
     // Avoid using node_modules as a directory name, since it's trimmed from published packages.
-    // This can happen when inlining dependencies such as style-inject added for css injection.
+    // This can happen when inlining dependencies.
     const rewriteNodeModules = (name: string) =>
       name.replaceAll('node_modules', 'node_modules_dist');
 
@@ -247,16 +246,14 @@ export async function makeRollupConfigs(
           include: /node_modules/,
           exclude: [/\/[^/]+\.(?:stories|test)\.[^/]+$/],
         }),
-        postcss({
-          modules: {
-            generateScopedName(name: string, filename: string, css: string) {
-              const hash = createHash('md5')
-                .update(css)
-                .digest('hex')
-                .slice(0, 10);
-              const file = basename(filename, '.module.css');
-              return `${file}_${name}__${hash}`;
-            },
+        cssImports({
+          generateScopedName(name: string, filename: string, css: string) {
+            const hash = createHash('md5')
+              .update(css)
+              .digest('hex')
+              .slice(0, 10);
+            const file = basename(filename, '.module.css');
+            return `${file}_${name}__${hash}`;
           },
         }),
         forwardFileImports({
