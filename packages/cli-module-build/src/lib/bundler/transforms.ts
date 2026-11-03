@@ -30,15 +30,10 @@ type Transforms = {
 type TransformOptions = {
   isDev: boolean;
   isBackend?: boolean;
-  webpack?: typeof import('webpack').webpack;
 };
 
 export const transforms = (options: TransformOptions): Transforms => {
-  const { isDev, isBackend, webpack } = options;
-
-  const CssExtractPlugin: typeof CssExtractRspackPlugin = webpack
-    ? (require('mini-css-extract-plugin') as unknown as typeof CssExtractRspackPlugin)
-    : CssExtractRspackPlugin;
+  const { isDev, isBackend } = options;
 
   // This ensures that styles inserted from the style-loader and any
   // async style chunks are always given lower priority than JSS styles.
@@ -63,9 +58,7 @@ export const transforms = (options: TransformOptions): Transforms => {
       exclude: /node_modules/,
       use: [
         {
-          loader: webpack
-            ? require.resolve('swc-loader')
-            : 'builtin:swc-loader',
+          loader: 'builtin:swc-loader',
           options: {
             jsc: {
               target: 'es2024',
@@ -93,9 +86,7 @@ export const transforms = (options: TransformOptions): Transforms => {
       exclude: /node_modules/,
       use: [
         {
-          loader: webpack
-            ? require.resolve('swc-loader')
-            : 'builtin:swc-loader',
+          loader: 'builtin:swc-loader',
           options: {
             jsc: {
               target: 'es2024',
@@ -170,7 +161,7 @@ export const transforms = (options: TransformOptions): Transforms => {
                 insert: insertBeforeJssStyles,
               },
             }
-          : CssExtractPlugin.loader,
+          : CssExtractRspackPlugin.loader,
         {
           loader: require.resolve('css-loader'),
           options: {
@@ -185,7 +176,7 @@ export const transforms = (options: TransformOptions): Transforms => {
 
   if (!isDev) {
     plugins.push(
-      new CssExtractPlugin({
+      new CssExtractRspackPlugin({
         filename: `static/[name].[contenthash:${STATIC_ASSET_HASH_LENGTH}].css`,
         chunkFilename: `static/[name].[id].[contenthash:${STATIC_ASSET_HASH_LENGTH}].css`,
         insert: insertBeforeJssStyles, // Only applies to async chunks

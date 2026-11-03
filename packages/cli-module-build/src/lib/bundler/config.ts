@@ -23,7 +23,6 @@ import { Config } from '@backstage/config';
 import ESLintRspackPlugin from 'eslint-rspack-plugin';
 import { TsCheckerRspackPlugin } from 'ts-checker-rspack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
-import ModuleScopePlugin from 'react-dev-utils/ModuleScopePlugin';
 import { ModuleFederationPlugin } from '@module-federation/enhanced/rspack';
 
 import fs from 'fs-extra';
@@ -120,7 +119,6 @@ export async function createConfig(
     frontendConfig,
     moduleFederationRemote,
     publicSubPath = '',
-    webpack,
   } = options;
 
   const { plugins, loaders } = transforms(options);
@@ -134,44 +132,18 @@ export async function createConfig(
   }
 
   if (isDev) {
-    const { host, port } = resolveEndpoint(
-      options.frontendConfig,
-      options.moduleFederationRemote,
-    );
-
-    if (webpack) {
-      const ReactRefreshPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
-      plugins.push(
-        new ReactRefreshPlugin({
-          overlay: {
-            sockProtocol: 'ws',
-            sockHost: host,
-            sockPort: port,
-          },
-        }),
-      );
-    } else {
-      // The plugin is a named export, and unlike the WebPack one above it
-      // takes no overlay options.
-      const {
-        ReactRefreshRspackPlugin,
-      } = require('@rspack/plugin-react-refresh');
-      plugins.push(new ReactRefreshRspackPlugin());
-    }
+    const {
+      ReactRefreshRspackPlugin,
+    } = require('@rspack/plugin-react-refresh');
+    plugins.push(new ReactRefreshRspackPlugin());
   }
 
   if (checksEnabled) {
-    const TsCheckerPlugin = webpack
-      ? (require('fork-ts-checker-webpack-plugin') as typeof import('fork-ts-checker-webpack-plugin'))
-      : TsCheckerRspackPlugin;
-    const ESLintPlugin = webpack
-      ? (require('eslint-webpack-plugin') as typeof import('eslint-webpack-plugin'))
-      : ESLintRspackPlugin;
     plugins.push(
-      new TsCheckerPlugin({
+      new TsCheckerRspackPlugin({
         typescript: { configFile: paths.targetTsConfig, memoryLimit: 8192 },
       }),
-      new ESLintPlugin({
+      new ESLintRspackPlugin({
         cache: false, // Cache seems broken
         context: paths.targetPath,
         files: ['**/*.(ts|tsx|mts|cts|js|jsx|mjs|cjs)'],
@@ -179,13 +151,11 @@ export async function createConfig(
     );
   }
 
-  const bundler = webpack ? (webpack as unknown as typeof rspack) : rspack;
-
   // TODO(blam): process is no longer auto polyfilled by webpack in v5.
   // we use the provide plugin to provide this polyfill, but lets look
   // to remove this eventually!
   plugins.push(
-    new bundler.ProvidePlugin({
+    new rspack.ProvidePlugin({
       process: require.resolve('process/browser'),
       Buffer: ['buffer', 'Buffer'],
     }),
@@ -202,25 +172,19 @@ export async function createConfig(
         config: frontendConfig,
       },
     };
-    if (webpack) {
-      // Config injection via index.html doesn't work across reloads with
-      // WebPack, so we rely on the APP_CONFIG injection instead
-      plugins.push(new HtmlWebpackPlugin(templateOptions));
-    } else {
-      // With Rspack we inject config via index.html, this is both because we
-      // can't use APP_CONFIG due to the lack of support for runtime values, but
-      // also because we are able to do it and it lines up better with what the
-      // app-backend is doing.
-      //
-      // We still use the html plugin from WebPack, since the Rspack one won't
-      // let us inject complex objects like the config.
-      plugins.push(
-        new ConfigInjectingHtmlWebpackPlugin(
-          templateOptions,
-          options.getFrontendAppConfigs,
-        ),
-      );
-    }
+    // We inject config via index.html, this is both because we can't use
+    // APP_CONFIG due to the lack of support for runtime values in Rspack, but
+    // also because we are able to do it and it lines up better with what the
+    // app-backend is doing.
+    //
+    // We use the html plugin from WebPack, since the Rspack one won't let us
+    // inject complex objects like the config.
+    plugins.push(
+      new ConfigInjectingHtmlWebpackPlugin(
+        templateOptions,
+        options.getFrontendAppConfigs,
+      ),
+    );
     plugins.push(
       new HtmlWebpackPlugin({
         meta: {
@@ -237,11 +201,6 @@ export async function createConfig(
   }
 
   if (options.moduleFederationRemote) {
-    const AdaptedModuleFederationPlugin = webpack
-      ? (require('@module-federation/enhanced/webpack')
-          .ModuleFederationPlugin as unknown as typeof ModuleFederationPlugin)
-      : ModuleFederationPlugin;
-
     const exposes = options.moduleFederationRemote.exposes
       ? Object.fromEntries(
           Object.entries(options.moduleFederationRemote?.exposes).map(
@@ -253,7 +212,7 @@ export async function createConfig(
         };
 
     plugins.push(
-      new AdaptedModuleFederationPlugin({
+      new ModuleFederationPlugin({
         filename: 'remoteEntry.js',
         exposes,
         name: options.moduleFederationRemote.name,
@@ -266,64 +225,23 @@ export async function createConfig(
   const buildInfo = await readBuildInfo();
 
   plugins.push(
-    webpack
-      ? new webpack.DefinePlugin({
-          'process.env.BUILD_INFO': JSON.stringify(buildInfo),
-          'process.env.APP_CONFIG': webpack.DefinePlugin.runtimeValue(
-            () => JSON.stringify(options.getFrontendAppConfigs()),
-            true,
-          ),
-          // This allows for conditional imports of react-dom/client, since there's no way
-          // to check for presence of it in source code without module resolution errors.
-          'process.env.HAS_REACT_DOM_CLIENT': JSON.stringify(
-            hasReactDomClient(),
-          ),
-        })
-      : new bundler.DefinePlugin({
-          'process.env.BUILD_INFO': JSON.stringify(buildInfo),
-          'process.env.APP_CONFIG': JSON.stringify([]), // Inject via index.html instead
-          // This allows for conditional imports of react-dom/client, since there's no way
-          // to check for presence of it in source code without module resolution errors.
-          'process.env.HAS_REACT_DOM_CLIENT': JSON.stringify(
-            hasReactDomClient(),
-          ),
-        }),
+    new rspack.DefinePlugin({
+      'process.env.BUILD_INFO': JSON.stringify(buildInfo),
+      'process.env.APP_CONFIG': JSON.stringify([]), // Inject via index.html instead
+      // This allows for conditional imports of react-dom/client, since there's no way
+      // to check for presence of it in source code without module resolution errors.
+      'process.env.HAS_REACT_DOM_CLIENT': JSON.stringify(hasReactDomClient()),
+    }),
   );
 
   if (options.linkedWorkspace) {
     plugins.push(
-      ...(await createWorkspaceLinkingPlugins(
-        bundler,
-        options.linkedWorkspace,
-      )),
+      ...(await createWorkspaceLinkingPlugins(options.linkedWorkspace)),
     );
   }
 
-  // These files are required by the transpiled code when using React Refresh.
-  // They need to be excluded to the module scope plugin which ensures that files
-  // that exist in the package are required.
-  const reactRefreshFiles = webpack
-    ? [
-        require.resolve(
-          '@pmmmwh/react-refresh-webpack-plugin/lib/runtime/RefreshUtils.js',
-        ),
-        require.resolve(
-          '@pmmmwh/react-refresh-webpack-plugin/overlay/index.js',
-        ),
-        require.resolve('react-refresh'),
-      ]
-    : [];
-
   const mode = isDev ? 'development' : 'production';
   const optimization = optimizationConfig(options);
-
-  // WebPack takes this under `experiments`, Rspack at the top level, and each
-  // rejects the other's shape. The config is typed with Rspack's types, hence
-  // the cast for WebPack.
-  const lazyCompilation = yn(process.env.EXPERIMENTAL_LAZY_COMPILATION);
-  const lazyCompilationConfig = webpack
-    ? ({ experiments: { lazyCompilation } } as Configuration)
-    : { lazyCompilation };
 
   return {
     mode,
@@ -371,29 +289,18 @@ export async function createConfig(
         http: false,
         util: require.resolve('util/'),
       },
-      // FIXME: see also https://github.com/web-infra-dev/rspack/issues/3408
-      ...(webpack && {
-        plugins: [
-          new ModuleScopePlugin(
-            [paths.targetSrc, paths.targetDev],
-            [paths.targetPackageJson, ...reactRefreshFiles],
-          ),
-        ],
-      }),
     },
     module: {
       rules: loaders,
       // Pinned, as the Rspack defaults fail the build on otherwise valid app
       // code: `exportsPresence` errors on missing exports, and renamed
-      // `require` calls are left unbundled. WebPack has no `requireAlias`.
-      ...(!webpack && {
-        parser: {
-          javascript: {
-            exportsPresence: 'auto' as const,
-            requireAlias: true,
-          },
+      // `require` calls are left unbundled.
+      parser: {
+        javascript: {
+          exportsPresence: 'auto' as const,
+          requireAlias: true,
         },
-      }),
+      },
     },
     output: {
       uniqueName: options.moduleFederationRemote?.name,
@@ -415,7 +322,7 @@ export async function createConfig(
           }
         : {}),
     },
-    ...lazyCompilationConfig,
+    lazyCompilation: yn(process.env.EXPERIMENTAL_LAZY_COMPILATION),
     plugins,
     ignoreWarnings: [
       // @protobufjs/inquire uses require(moduleName) with a dynamic argument.

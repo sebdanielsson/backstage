@@ -25,7 +25,7 @@ import { STATIC_ASSET_HASH_LENGTH } from './staticAssetHash';
 export const optimization = (
   options: BundlingOptions,
 ): RspackOptionsNormalized['optimization'] => {
-  const { isDev, moduleFederationRemote, webpack } = options;
+  const { isDev, moduleFederationRemote } = options;
   const sharedRemoteChunks = {
     chunks: 'async' as const,
     name: false as const,
@@ -39,25 +39,11 @@ export const optimization = (
     type: /^(?!css\/mini-extract$)/,
   };
 
-  const MinifyPlugin = webpack
-    ? require('esbuild-loader').EsbuildPlugin
-    : SwcJsMinimizerRspackPlugin;
-
   return {
     minimize: !isDev,
     minimizer: [
-      new MinifyPlugin({
-        target: 'ES2024',
-        format: 'iife',
-        exclude: 'remoteEntry.js',
-      }),
-      // Avoid iife wrapping of module federation remote entry as it breaks the variable assignment
-      new MinifyPlugin({
-        target: 'ES2024',
-        format: undefined,
-        include: 'remoteEntry.js',
-      }),
-      webpack ? undefined : new LightningCssMinimizerRspackPlugin(),
+      new SwcJsMinimizerRspackPlugin(),
+      new LightningCssMinimizerRspackPlugin(),
     ],
     runtimeChunk: 'single',
     splitChunks: {
@@ -104,10 +90,6 @@ export const optimization = (
               priority: 10,
               minSize: 100000,
               minChunks: 1,
-              ...(webpack && {
-                maxAsyncRequests: Infinity,
-                maxInitialRequests: Infinity,
-              }),
             }, // filename is not included in type, but we need it
             // Group together the smallest modules
             vendor: {

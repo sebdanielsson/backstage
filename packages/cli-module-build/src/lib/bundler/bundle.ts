@@ -39,7 +39,7 @@ function applyContextToError(error: string, moduleName: string): string {
 }
 
 export async function buildBundle(options: BuildOptions) {
-  const { statsJsonEnabled, schema: configSchema, webpack } = options;
+  const { statsJsonEnabled, schema: configSchema } = options;
 
   const paths = resolveBundlingPaths(options);
   const publicPaths = await resolveOptionalBundlingPaths({
@@ -127,11 +127,7 @@ export async function buildBundle(options: BuildOptions) {
     );
   }
 
-  if (webpack) {
-    console.log(chalk.yellow(`⚠️  WARNING: Using legacy WebPack bundler`));
-  }
-
-  const { stats } = await build(configs, isCi, webpack);
+  const { stats } = await build(configs, isCi);
 
   if (!stats) {
     throw new Error('No stats returned');
@@ -147,7 +143,7 @@ export async function buildBundle(options: BuildOptions) {
       mainStats.toJson({
         assets: true,
         chunkGroups: true,
-        // Asking for `modules` turns this off by default, in both bundlers
+        // Asking for `modules` turns this off by default
         chunkModules: true,
         chunks: true,
         entrypoints: true,
@@ -174,15 +170,9 @@ export async function buildBundle(options: BuildOptions) {
   }
 }
 
-async function build(
-  configs: Configuration[],
-  isCi: boolean,
-  webpack?: typeof import('webpack'),
-) {
-  const bundler = (webpack ?? rspack) as typeof rspack;
-
+async function build(configs: Configuration[], isCi: boolean) {
   const stats = await new Promise<MultiStats | undefined>((resolve, reject) => {
-    bundler(configs, (err, buildStats) => {
+    rspack(configs, (err, buildStats) => {
       if (err) {
         if (err.message) {
           const { errors } = formatWebpackMessages({
