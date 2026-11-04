@@ -102,6 +102,12 @@ RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
 CMD ["node", "packages/backend", "--config", "app-config.yaml", "--config", "app-config.production.yaml"]
 ```
 
+:::note
+
+The Dockerfiles on this page use slim images without build tools. `better-sqlite3` doesn't need them, as it includes precompiled binaries, but Yarn 4.18.1 and earlier still run `node-gyp` for it when installing dependencies. That needs `python3` and `make` and downloads the Node.js headers from `nodejs.org`. With those Yarn versions, add `"dependenciesMeta": { "better-sqlite3": { "built": false } }` to your root `package.json` and run `yarn install`, or install `python3` and `make` in the image.
+
+:::
+
 For more details on how the `backend:bundle` command and the `skeleton.tar.gz`
 file works, see the
 [`backend:bundle` command docs](../tooling/cli/module-build.md#package-bundle).

@@ -1821,7 +1821,7 @@ __metadata:
     "@types/yauzl": "npm:^2.10.0"
     archiver: "npm:^7.0.0"
     base64-stream: "npm:^1.0.0"
-    better-sqlite3: "npm:^12.0.0"
+    better-sqlite3: "npm:^13.0.3"
     compression: "npm:^1.7.4"
     concat-stream: "npm:^2.0.0"
     cookie: "npm:^0.7.0"
@@ -1870,7 +1870,7 @@ __metadata:
     zod-to-json-schema: "npm:^3.25.1"
   peerDependencies:
     "@google-cloud/cloud-sql-connector": ^1.4.0
-    better-sqlite3: ^12.0.0
+    better-sqlite3: ^12.0.0 || ^13.0.3
   peerDependenciesMeta:
     "@google-cloud/cloud-sql-connector":
       optional: true
@@ -2005,7 +2005,7 @@ __metadata:
     "@types/lodash": "npm:^4.14.151"
     "@types/qs": "npm:^6.9.6"
     "@types/supertest": "npm:^2.0.8"
-    better-sqlite3: "npm:^12.0.0"
+    better-sqlite3: "npm:^13.0.3"
     cookie: "npm:^0.7.0"
     express: "npm:^4.22.0"
     fs-extra: "npm:^11.0.0"
@@ -4535,7 +4535,7 @@ __metadata:
     "@backstage/plugin-permission-common": "workspace:^"
     "@types/express": "npm:^4.17.6"
     "@types/supertest": "npm:^2.0.8"
-    better-sqlite3: "npm:^12.0.0"
+    better-sqlite3: "npm:^13.0.3"
     express: "npm:^4.22.0"
     express-promise-router: "npm:^4.1.1"
     knex: "npm:^3.0.0"
@@ -4575,7 +4575,7 @@ __metadata:
     "@types/supertest": "npm:^2.0.8"
     ajv: "npm:^8.10.0"
     ajv-errors: "npm:^3.0.0"
-    better-sqlite3: "npm:^12.0.0"
+    better-sqlite3: "npm:^13.0.3"
     core-js: "npm:^3.6.5"
     express: "npm:^4.22.0"
     fast-json-stable-stringify: "npm:^2.1.0"
@@ -22865,14 +22865,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^12.0.0":
-  version: 12.11.1
-  resolution: "better-sqlite3@npm:12.11.1"
+"better-sqlite3@npm:^13.0.3":
+  version: 13.0.3
+  resolution: "better-sqlite3@npm:13.0.3"
   dependencies:
-    bindings: "npm:^1.5.0"
+    node-addon-api: "npm:^8.0.0"
     node-gyp: "npm:latest"
-    prebuild-install: "npm:^7.1.1"
-  checksum: 10/a516421fda128dd25e36dd9c8c8857e6fd94b27ab7da644af939109bd57540c58bad8ed784ef0fdfe03d094deabed5733c33dabed4f91b57a89543deab9b28d6
+  checksum: 10/035f8fa70784762fd73e1dbeb6f157186abb97705ff759b312cfb0dc1c675fd1c6b5378d2c036758000ce9da1d49bf61689531aa2718a7e32dc272c114a4c71f
   languageName: node
   linkType: hard
 
@@ -22950,15 +22949,6 @@ __metadata:
   dependencies:
     editions: "npm:^6.21.0"
   checksum: 10/5b61b16f89e871c95e9b802ffb171e5a0c0f54569894c28c5602381a0617b38f4c1b15fda0047a270745411b6f672689c4e87519a4a58dbc5cde8d280971c852
-  languageName: node
-  linkType: hard
-
-"bindings@npm:^1.5.0":
-  version: 1.5.0
-  resolution: "bindings@npm:1.5.0"
-  dependencies:
-    file-uri-to-path: "npm:1.0.0"
-  checksum: 10/593d5ae975ffba15fbbb4788fe5abd1e125afbab849ab967ab43691d27d6483751805d98cb92f7ac24a2439a8a8678cd0131c535d5d63de84e383b0ce2786133
   languageName: node
   linkType: hard
 
@@ -28211,13 +28201,6 @@ __metadata:
     strtok3: "npm:^6.2.4"
     token-types: "npm:^4.1.1"
   checksum: 10/46ced46bb925ab547e0a6d43108a26d043619d234cb0588d7abce7b578dafac142bcfd2e23a6adb0a4faa4b951bd1b14b355134a193362e07cd352f9bf0dc349
-  languageName: node
-  linkType: hard
-
-"file-uri-to-path@npm:1.0.0":
-  version: 1.0.0
-  resolution: "file-uri-to-path@npm:1.0.0"
-  checksum: 10/b648580bdd893a008c92c7ecc96c3ee57a5e7b6c4c18a9a09b44fb5d36d79146f8e442578bc0e173dc027adf3987e254ba1dfd6e3ec998b7c282873010502144
   languageName: node
   linkType: hard
 
@@ -38555,7 +38538,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prebuild-install@npm:^7.0.1, prebuild-install@npm:^7.1.1":
+"prebuild-install@npm:^7.0.1":
   version: 7.1.3
   resolution: "prebuild-install@npm:7.1.3"
   dependencies:
