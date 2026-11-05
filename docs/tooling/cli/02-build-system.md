@@ -534,6 +534,30 @@ of all supported file extensions:
 | `.svg`    | URL Path      | Image                        |
 | `.md`     | URL Path      | Markdown File                |
 
+## PostCSS
+
+Both the package builds and the frontend bundling apply
+[PostCSS](https://postcss.org/) config files to CSS. For each CSS file, the
+first config file in the directory of the CSS file or above it is used, for
+example `postcss.config.mjs`, `.postcssrc.json` or a `postcss` field in
+`package.json`. Plugins named in a config file are loaded from the directory of
+the config file. Without a config file, no PostCSS plugins are applied.
+
+The frontend bundling doesn't apply config files to CSS files in
+`node_modules`. Package builds don't apply them to CSS files listed in the
+`exports` field of `package.json` either. For those files, they only inline the
+`@import` rules.
+
+This lets you use PostCSS plugins such as Autoprefixer, or tools that provide a
+PostCSS plugin, such as Tailwind CSS. Like other build warnings, warnings from
+these plugins fail frontend production builds when the `CI` environment
+variable is set.
+
+:::note
+The Backstage project doesn't support specific PostCSS plugins or tools, and
+doesn't test them with Backstage.
+:::
+
 ## ECMAScript Modules
 
 The Backstage tooling supports [ECMAScript modules (ESM)](https://nodejs.org/docs/latest-v24.x/api/esm.html) in Node.js packages. This includes support for all the script module file extensions listed above during local development, in built packages, in tests, and during type checking. [Dynamic imports](https://nodejs.org/docs/latest-v24.x/api/esm.html#import-expressions) can be used to load ESM-only packages from CommonJS and vice versa. There are however a couple of limitations to be aware of:

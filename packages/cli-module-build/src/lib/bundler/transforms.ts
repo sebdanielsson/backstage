@@ -15,6 +15,7 @@
  */
 
 import { RuleSetRule } from '@rspack/core';
+import postcssLoader from './postcssLoader';
 import { STATIC_ASSET_HASH_LENGTH } from './staticAssetHash';
 
 type Transforms = {
@@ -147,6 +148,14 @@ export const transforms = (options: TransformOptions): Transforms => {
         grid: false,
         function: false,
       },
+      rules: [
+        {
+          // Only the CSS of the app and its workspace packages, not of
+          // dependencies
+          exclude: /node_modules/,
+          use: [{ loader: postcssLoader.path }],
+        },
+      ],
     },
   ];
 
