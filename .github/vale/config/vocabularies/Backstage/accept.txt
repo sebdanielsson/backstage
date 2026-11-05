@@ -27,6 +27,7 @@ autocomplete
 autofix
 autologout
 automations
+Autoprefixer
 autoscaling
 autoselect
 Avro
@@ -382,6 +383,7 @@ Pluggable
 Podman
 polyfills
 posix
+PostCSS
 postgres
 postpack
 PR
@@ -520,6 +522,7 @@ superset
 supertype
 SVGs
 swappable
+Tailwind
 talkdesk
 Talkdesk
 Tanzu

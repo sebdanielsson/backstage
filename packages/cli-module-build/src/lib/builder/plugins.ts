@@ -17,12 +17,9 @@
 import fs from 'fs-extra';
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
-import postcssLoadConfig from 'postcss-load-config';
 import postcssModules from 'postcss-modules';
 import {
-  basename,
   dirname,
-  extname,
   resolve as resolvePath,
   relative as relativePath,
 } from 'node:path';
@@ -34,6 +31,7 @@ import {
   HasModuleSideEffects,
 } from 'rollup';
 import { EntryPoint } from '../entryPoints';
+import { loadPostcssConfig } from '../postcssConfig';
 
 type ForwardFileImportsOptions = {
   include: Array<string | RegExp> | string | RegExp | null;
@@ -246,33 +244,6 @@ const STYLE_INJECT_SOURCE = `export default function styleInject(css) {
 
 const CSS_FILE_PATTERN = /\.(?:css|sss|pcss)$/;
 const CSS_MODULE_PATTERN = /\.module\.[a-z]{2,6}$/;
-
-type PostcssConfig = Pick<postcssLoadConfig.Result, 'plugins' | 'options'>;
-
-async function loadPostcssConfig(file: string): Promise<PostcssConfig> {
-  // The same context that rollup-plugin-postcss gave config functions, which
-  // can depend on the file
-  const ctx: postcssLoadConfig.ConfigContext & {
-    file: { extname: string; dirname: string; basename: string };
-    options: {};
-  } = {
-    file: {
-      extname: extname(file),
-      dirname: dirname(file),
-      basename: basename(file),
-    },
-    options: {},
-  };
-  try {
-    const { plugins, options } = await postcssLoadConfig(ctx, dirname(file));
-    return { plugins, options };
-  } catch (error) {
-    if (error?.message?.includes('No PostCSS Config found')) {
-      return { plugins: [], options: {} };
-    }
-    throw error;
-  }
-}
 
 interface CssImportsOptions {
   /**
