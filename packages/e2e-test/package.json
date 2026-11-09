@@ -33,8 +33,11 @@
   },
   "dependencies": {
     "@backstage/cli-common": "workspace:^",
+    "@backstage/cli-node": "workspace:^",
     "@backstage/create-app": "workspace:^",
     "@backstage/errors": "workspace:^",
+    "@pnpm/deps.path": "^1101.0.6",
+    "@pnpm/lockfile.fs": "^1100.2.13",
     "chalk": "^4.0.0",
     "commander": "^14.0.3",
     "cross-fetch": "^4.0.0",
@@ -42,6 +45,7 @@
     "handlebars": "^4.7.3",
     "mysql2": "^3.0.0",
     "pgtools": "^1.0.0",
+    "tar": "^7.5.21",
     "tree-kill": "^1.2.2",
     "yaml": "^2.0.0"
   },

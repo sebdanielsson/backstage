@@ -26557,8 +26557,11 @@ __metadata:
   dependencies:
     "@backstage/cli": "workspace:^"
     "@backstage/cli-common": "workspace:^"
+    "@backstage/cli-node": "workspace:^"
     "@backstage/create-app": "workspace:^"
     "@backstage/errors": "workspace:^"
+    "@pnpm/deps.path": "npm:^1101.0.6"
+    "@pnpm/lockfile.fs": "npm:^1100.2.13"
     "@types/fs-extra": "npm:^11.0.0"
     "@types/node": "npm:^24.0.0"
     chalk: "npm:^4.0.0"
@@ -26569,6 +26572,7 @@ __metadata:
     mysql2: "npm:^3.0.0"
     nodemon: "npm:^3.0.1"
     pgtools: "npm:^1.0.0"
+    tar: "npm:^7.5.21"
     tree-kill: "npm:^1.2.2"
     yaml: "npm:^2.0.0"
   bin:
