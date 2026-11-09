@@ -19,7 +19,11 @@ import fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';
 import type { SourcePackageArtifact } from './distWorkspace';
-import { startRegistry, verifyResolvedLockfile } from './packageRegistry';
+import {
+  publishArgs,
+  startRegistry,
+  verifyResolvedLockfile,
+} from './packageRegistry';
 
 jest.mock('@backstage/cli-common', () => ({ runOutput: jest.fn() }));
 
@@ -238,5 +242,30 @@ describe('startRegistry', () => {
     } finally {
       await fs.remove(workDir);
     }
+  });
+});
+
+describe('publishArgs', () => {
+  it('publishes with an explicit tag so prerelease versions are accepted', () => {
+    expect(
+      publishArgs(
+        '/fixtures/@backstage/pkg-1.9.0-next.0.tgz',
+        'http://127.0.0.1:4873',
+        '/tmp/publisher.npmrc',
+      ),
+    ).toEqual([
+      'npm',
+      'publish',
+      '/fixtures/@backstage/pkg-1.9.0-next.0.tgz',
+      '--registry',
+      'http://127.0.0.1:4873',
+      '--userconfig',
+      '/tmp/publisher.npmrc',
+      '--access',
+      'public',
+      '--tag',
+      'e2e',
+      '--ignore-scripts',
+    ]);
   });
 });

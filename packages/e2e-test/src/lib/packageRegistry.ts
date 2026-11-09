@@ -135,6 +135,32 @@ async function fetchMetadata(
 }
 
 /**
+ * Builds the argument list for `npm publish` against the fixture registry.
+ * The explicit tag lets npm publish prerelease versions; the fixture consumer
+ * resolves exact versions from ranges, not from the `latest` tag.
+ */
+export function publishArgs(
+  archivePath: string,
+  registryUrl: string,
+  publisherNpmrcPath: string,
+): string[] {
+  return [
+    'npm',
+    'publish',
+    archivePath,
+    '--registry',
+    registryUrl,
+    '--userconfig',
+    publisherNpmrcPath,
+    '--access',
+    'public',
+    '--tag',
+    'e2e',
+    '--ignore-scripts',
+  ];
+}
+
+/**
  * Starts the disposable registry and prepares the npmrc files for the
  * consumer and the publisher.
  */
@@ -188,18 +214,7 @@ export async function startRegistry(options: {
           continue;
         }
         await runIsolated(
-          [
-            'npm',
-            'publish',
-            artifact.archivePath,
-            '--registry',
-            url,
-            '--userconfig',
-            publisherNpmrcPath,
-            '--access',
-            'public',
-            '--ignore-scripts',
-          ],
+          publishArgs(artifact.archivePath, url, publisherNpmrcPath),
           {
             cwd: options.workDir,
             env: { npm_config_userconfig: publisherNpmrcPath },
