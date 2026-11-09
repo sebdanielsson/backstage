@@ -79,22 +79,24 @@ async function startContainer(
   storageDir: string,
   image: string,
 ): Promise<string> {
+  // A failure here, such as a name conflict from a reused runId, must not
+  // remove a container that this call did not create.
+  await runOutput([
+    'docker',
+    'run',
+    '-d',
+    '--rm',
+    '--name',
+    containerName,
+    '-p',
+    '127.0.0.1::4873',
+    '-v',
+    `${confDir}:/verdaccio/conf:ro`,
+    '-v',
+    `${storageDir}:/verdaccio/storage`,
+    image,
+  ]);
   try {
-    await runOutput([
-      'docker',
-      'run',
-      '-d',
-      '--rm',
-      '--name',
-      containerName,
-      '-p',
-      '127.0.0.1::4873',
-      '-v',
-      `${confDir}:/verdaccio/conf:ro`,
-      '-v',
-      `${storageDir}:/verdaccio/storage`,
-      image,
-    ]);
     const port = await runOutput([
       'docker',
       'inspect',
@@ -281,7 +283,9 @@ export async function verifyResolvedLockfile(options: {
   const lockfile = convertToLockfileObject(lockfileFile);
 
   const registryPrefix = options.registryUrl.replace(/\/+$/, '');
-  let verified = 0;
+  // Peer-provider variants have separate entries but resolve to the same
+  // seeded artifact, so count each package version once.
+  const verified = new Set<string>();
   for (const [depPath, pkg] of Object.entries(lockfile.packages ?? {})) {
     // Peer suffixes must not prevent a match with the seeded artifact
     const packageId = getPkgIdWithPatchHash(
@@ -318,11 +322,11 @@ export async function verifyResolvedLockfile(options: {
         `tarball for ${parsed.name}@${version} points outside the fixture registry: ${resolution.tarball}`,
       );
     }
-    verified++;
+    verified.add(`${parsed.name}@${version}`);
   }
 
   return {
-    verified,
+    verified: verified.size,
     workspaceImporters: Object.keys(lockfile.importers),
   };
 }

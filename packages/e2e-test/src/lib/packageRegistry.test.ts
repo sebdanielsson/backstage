@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
+import { runOutput } from '@backstage/cli-common';
 import fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';
 import type { SourcePackageArtifact } from './distWorkspace';
-import { verifyResolvedLockfile } from './packageRegistry';
+import { startRegistry, verifyResolvedLockfile } from './packageRegistry';
+
+jest.mock('@backstage/cli-common', () => ({ runOutput: jest.fn() }));
+
+const runOutputMock = runOutput as jest.MockedFunction<typeof runOutput>;
 
 const FIXTURE_LOCKFILE = path.resolve(
   __dirname,
@@ -101,6 +106,39 @@ describe('verifyResolvedLockfile', () => {
     ).rejects.toThrow('integrity mismatch for is-odd@3.0.1');
   });
 
+  it('counts peer-provider variants of a package version once', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'e2e-lockfile-'));
+    try {
+      const peerVariants = path.join(dir, 'peer-variants.yaml');
+      await fs.writeFile(
+        peerVariants,
+        [
+          "lockfileVersion: '9.0'",
+          'importers:',
+          '  .: {}',
+          'packages:',
+          '  is-odd@3.0.1:',
+          '    resolution:',
+          `      integrity: ${JSON.stringify(artifacts[2].integrity)}`,
+          'snapshots:',
+          '  is-odd@3.0.1(react@18.3.1): {}',
+          '  is-odd@3.0.1(react@18.3.2): {}',
+          '',
+        ].join('\n'),
+      );
+      await expect(
+        verifyResolvedLockfile({
+          lockfilePath: peerVariants,
+          registryUrl,
+          artifacts: [artifacts[2]],
+          repositoryPackageNames: new Set(['is-odd']),
+        }),
+      ).resolves.toEqual({ verified: 1, workspaceImporters: ['.'] });
+    } finally {
+      await fs.remove(dir);
+    }
+  });
+
   it('rejects pre-v9 lockfiles and tarballs outside the fixture registry', async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'e2e-lockfile-'));
     try {
@@ -145,6 +183,60 @@ describe('verifyResolvedLockfile', () => {
       ).rejects.toThrow('outside the fixture registry');
     } finally {
       await fs.remove(dir);
+    }
+  });
+});
+
+describe('startRegistry', () => {
+  const options = {
+    runId: 'run',
+    seededPackageNames: [],
+    repositoryPackageNames: new Set<string>(),
+    image: 'verdaccio/verdaccio',
+  };
+
+  afterEach(() => {
+    runOutputMock.mockReset();
+  });
+
+  it('does not remove an existing container when docker run fails', async () => {
+    runOutputMock.mockRejectedValueOnce(
+      new Error(
+        'Conflict. The container name "/run-registry" is already in use',
+      ),
+    );
+    const workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'e2e-registry-'));
+    try {
+      await expect(startRegistry({ ...options, workDir })).rejects.toThrow(
+        'already in use',
+      );
+      expect(runOutputMock).toHaveBeenCalledTimes(1);
+      expect(runOutputMock).toHaveBeenCalledWith(
+        expect.arrayContaining(['docker', 'run', '--name', 'run-registry']),
+      );
+    } finally {
+      await fs.remove(workDir);
+    }
+  });
+
+  it('removes the container when startup fails after docker run', async () => {
+    runOutputMock
+      .mockResolvedValueOnce('container-id')
+      .mockRejectedValueOnce(new Error('inspect failed'))
+      .mockResolvedValueOnce('');
+    const workDir = await fs.mkdtemp(path.join(os.tmpdir(), 'e2e-registry-'));
+    try {
+      await expect(startRegistry({ ...options, workDir })).rejects.toThrow(
+        'inspect failed',
+      );
+      expect(runOutputMock).toHaveBeenNthCalledWith(3, [
+        'docker',
+        'rm',
+        '-f',
+        'run-registry',
+      ]);
+    } finally {
+      await fs.remove(workDir);
     }
   });
 });
