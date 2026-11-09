@@ -28,6 +28,14 @@ import {
   buildRegistryConfig,
 } from './registryConfig';
 
+/**
+ * The pinned Verdaccio image used by the fixture registry. The digest is the
+ * multi-platform index of `verdaccio/verdaccio:6` resolved with
+ * `docker buildx imagetools inspect verdaccio/verdaccio:6`.
+ */
+export const REGISTRY_IMAGE =
+  'verdaccio/verdaccio@sha256:82f4decaf1c9eff885bf7a1227335f78581ff715288d5f38898e67e28b3bfbdd';
+
 const REGISTRY_READY_TIMEOUT_MS = 60_000;
 const REGISTRY_POLL_INTERVAL_MS = 500;
 
