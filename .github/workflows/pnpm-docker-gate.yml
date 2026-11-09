@@ -44,7 +44,9 @@ jobs:
       - run: yarn backstage-cli repo build
 
       - name: run the transport gate
-        run: E2E_PACK=1 E2E_DOCKER=1 CI=1 yarn test packages/e2e-test/src/lib/dockerTransport.integration.test.ts
+        # Invoke the CLI directly: the root "test" script sets NODE_OPTIONS and
+        # would drop the job's heap size.
+        run: E2E_PACK=1 E2E_DOCKER=1 CI=1 NODE_OPTIONS='--max-old-space-size=8192 --no-node-snapshot --experimental-vm-modules' yarn backstage-cli repo test packages/e2e-test/src/lib/dockerTransport.integration.test.ts
         env:
           E2E_DIAGNOSTICS_DIR: ${{ runner.temp }}/e2e-diagnostics
 

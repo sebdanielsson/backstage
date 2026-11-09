@@ -15,11 +15,17 @@
  */
 
 import { runOutput } from '@backstage/cli-common';
+import { PackageGraph } from '@backstage/cli-node';
 import fs from 'fs-extra';
 import os from 'node:os';
 import path from 'node:path';
 import * as tar from 'tar';
 import { parseDocument } from 'yaml';
+import {
+  collectAppRepositoryNames,
+  expectedArtifactCount,
+  readAppRepositoryStartNames,
+} from './appClosure';
 import { createAppFromWorkspace } from './createApp';
 import type { PreparedArtifacts, SourcePackageArtifact } from './distWorkspace';
 import { prepareSourceArtifacts } from './distWorkspace';
@@ -153,8 +159,10 @@ describePack('always-packed source artifacts', () => {
           for (const [dependency, range] of Object.entries(
             (manifest[field] ?? {}) as Record<string, string>,
           )) {
+            // The range must be at the start of the string for the anchored
+            // protocol match, with the context after it for failure messages.
             expect(
-              `${artifact.name} ${field}.${dependency}: ${range}`,
+              `${range} (${artifact.name} ${field}.${dependency})`,
             ).not.toMatch(REPOSITORY_PROTOCOL);
           }
         }
@@ -171,20 +179,26 @@ describePack('always-packed source artifacts', () => {
 
 describeDocker('registry transport gate', () => {
   it('serves the always-packed closure to a generated app and builds its image', async () => {
-    const { runDir, prepared } = await prepareClosure();
-    const { artifacts } = prepared;
-    const runId = `e2e-docker-${Date.now()}`;
-    const registry = await startRegistry({
-      runId,
-      seededPackageNames: artifacts.map(artifact => artifact.name),
-      repositoryPackageNames: prepared.repositoryPackageNames,
-      image: REGISTRY_IMAGE,
-      workDir: path.join(runDir, 'registry'),
-    });
+    let runDir: string | undefined;
+    let registry: RegistryFixture | undefined;
     let builder: OwnedBuilder | undefined;
     try {
-      await registry.publish(artifacts);
-      await registry.verify(artifacts);
+      const closure = await prepareClosure();
+      runDir = closure.runDir;
+      const { prepared } = closure;
+      const { artifacts } = prepared;
+      const runId = `e2e-docker-${Date.now()}`;
+      const registryFixture = await startRegistry({
+        runId,
+        seededPackageNames: artifacts.map(artifact => artifact.name),
+        repositoryPackageNames: prepared.repositoryPackageNames,
+        image: REGISTRY_IMAGE,
+        workDir: path.join(runDir, 'registry'),
+      });
+      registry = registryFixture;
+
+      await registryFixture.publish(artifacts);
+      await registryFixture.verify(artifacts);
 
       // A repository package that is not part of the captured closure must not
       // resolve from the public registry.
@@ -193,7 +207,7 @@ describeDocker('registry transport gate', () => {
         name => !seededNames.has(name),
       );
       expect(unseededName).toBeDefined();
-      await registry.verifyUnseededRepositoryName(unseededName!);
+      await registryFixture.verifyUnseededRepositoryName(unseededName!);
 
       const appDir = await createAppFromWorkspace({
         appName: 'test-app',
@@ -204,7 +218,7 @@ describeDocker('registry transport gate', () => {
 
       const storeDir = path.join(runDir, 'store');
       const installEnv = {
-        npm_config_userconfig: registry.consumerNpmrcPath,
+        npm_config_userconfig: registryFixture.consumerNpmrcPath,
         CI: 'true',
       };
       const installArgs = [
@@ -249,13 +263,18 @@ describeDocker('registry transport gate', () => {
 
       const coverage = await verifyResolvedLockfile({
         lockfilePath: path.join(appDir, 'pnpm-lock.yaml'),
-        registryUrl: registry.url,
+        registryUrl: registryFixture.url,
         artifacts,
         repositoryPackageNames: prepared.repositoryPackageNames,
       });
-      const expected = artifacts.filter(
-        artifact => artifact.private !== true && artifact.bundled !== true,
-      ).length;
+      // Only the packages in the generated app's own repository dependency
+      // closure can appear in its lockfile. The always-packed bootstrap
+      // closure also contains create-app and template-only packages.
+      const appRepositoryNames = collectAppRepositoryNames(
+        await PackageGraph.listTargetPackages(),
+        await readAppRepositoryStartNames(appDir),
+      );
+      const expected = expectedArtifactCount(artifacts, appRepositoryNames);
       print(`Source artifact coverage: ${coverage.verified}/${expected}`);
       expect(coverage.verified).toBe(expected);
       expect(coverage.workspaceImporters).toContain('packages/backend');
@@ -264,7 +283,7 @@ describeDocker('registry transport gate', () => {
       const imageId = await builder.build({
         contextDir: appDir,
         dockerfile: path.join(appDir, 'packages/backend/Dockerfile'),
-        npmrcPath: registry.consumerNpmrcPath,
+        npmrcPath: registryFixture.consumerNpmrcPath,
         iidFile: path.join(runDir, 'backend.iid'),
         logPath: path.join(runDir, 'backend-build.log'),
       });
@@ -275,53 +294,63 @@ describeDocker('registry transport gate', () => {
       expect(versions.node).toBeTruthy();
       expect(versions.pnpm).toBeTruthy();
     } catch (error) {
-      await captureDiagnostics(runDir, registry).catch(() => {});
+      await captureDiagnostics({
+        runDir: runDir ?? workRoot,
+        registry,
+        error,
+      }).catch(() => {});
       throw error;
     } finally {
       await builder?.remove();
-      await registry.stop();
+      await registry?.stop();
     }
   });
 
   it('fails the install when a required repository package is not seeded', async () => {
-    const { runDir, prepared } = await prepareClosure();
-    const { artifacts } = prepared;
-
-    const appDir = await createAppFromWorkspace({
-      appName: 'negative-app',
-      workspaceDir: prepared.bootstrapWorkspace,
-      rootDir: runDir,
-      packageManager: getPackageManager('pnpm'),
-    });
-    // Pin every available source package so that the only reason the install
-    // can fail is the omitted package, not a generated range.
-    await addExactOverrides(appDir, artifacts);
-    const backendManifest = (await fs.readJson(
-      path.join(appDir, 'packages/backend/package.json'),
-    )) as { dependencies?: Record<string, string> };
-    const publishedNames = new Set(
-      artifacts
-        .filter(
-          artifact => artifact.private !== true && artifact.bundled !== true,
-        )
-        .map(artifact => artifact.name),
-    );
-    const omittedName = Object.keys(backendManifest.dependencies ?? {}).find(
-      name => publishedNames.has(name),
-    );
-    expect(omittedName).toBeDefined();
-
-    const registry = await startRegistry({
-      runId: `e2e-negative-${Date.now()}`,
-      seededPackageNames: [...publishedNames].filter(
-        name => name !== omittedName,
-      ),
-      repositoryPackageNames: prepared.repositoryPackageNames,
-      image: REGISTRY_IMAGE,
-      workDir: path.join(runDir, 'negative-registry'),
-    });
+    let runDir: string | undefined;
+    let registry: RegistryFixture | undefined;
     try {
-      await registry.publish(
+      const closure = await prepareClosure();
+      runDir = closure.runDir;
+      const { prepared } = closure;
+      const { artifacts } = prepared;
+
+      const appDir = await createAppFromWorkspace({
+        appName: 'negative-app',
+        workspaceDir: prepared.bootstrapWorkspace,
+        rootDir: runDir,
+        packageManager: getPackageManager('pnpm'),
+      });
+      // Pin every available source package so that the only reason the install
+      // can fail is the omitted package, not a generated range.
+      await addExactOverrides(appDir, artifacts);
+      const backendManifest = (await fs.readJson(
+        path.join(appDir, 'packages/backend/package.json'),
+      )) as { dependencies?: Record<string, string> };
+      const publishedNames = new Set(
+        artifacts
+          .filter(
+            artifact => artifact.private !== true && artifact.bundled !== true,
+          )
+          .map(artifact => artifact.name),
+      );
+      const omittedName = Object.keys(backendManifest.dependencies ?? {}).find(
+        name => publishedNames.has(name),
+      );
+      expect(omittedName).toBeDefined();
+
+      const registryFixture = await startRegistry({
+        runId: `e2e-negative-${Date.now()}`,
+        seededPackageNames: [...publishedNames].filter(
+          name => name !== omittedName,
+        ),
+        repositoryPackageNames: prepared.repositoryPackageNames,
+        image: REGISTRY_IMAGE,
+        workDir: path.join(runDir, 'negative-registry'),
+      });
+      registry = registryFixture;
+
+      await registryFixture.publish(
         artifacts.filter(artifact => artifact.name !== omittedName),
       );
 
@@ -338,7 +367,7 @@ describeDocker('registry transport gate', () => {
           {
             cwd: appDir,
             env: {
-              npm_config_userconfig: registry.consumerNpmrcPath,
+              npm_config_userconfig: registryFixture.consumerNpmrcPath,
               CI: 'true',
             },
           },
@@ -355,8 +384,16 @@ describeDocker('registry transport gate', () => {
       const output = `${withStreams.stdout ?? ''}\n${withStreams.stderr ?? ''}`;
       expect(output).toContain(omittedName!);
       expect(output).toMatch(/404|ERR_PNPM_FETCH_404/);
+    } catch (error) {
+      await captureDiagnostics({
+        runDir: runDir ?? workRoot,
+        registry,
+        error,
+        appName: 'negative-app',
+      }).catch(() => {});
+      throw error;
     } finally {
-      await registry.stop();
+      await registry?.stop();
     }
   });
 });
@@ -407,31 +444,53 @@ async function addExactOverrides(
 }
 
 /**
- * Writes the registry log and the generated configuration to a directory that
- * the gate workflow uploads on failure.
+ * Writes the failure, the registry log, and the generated configuration to a
+ * directory that survives the run so that the gate workflow can upload it.
  */
-async function captureDiagnostics(
-  runDir: string,
-  registry: RegistryFixture,
-): Promise<void> {
+async function captureDiagnostics(options: {
+  runDir?: string;
+  registry?: RegistryFixture;
+  error: unknown;
+  appName?: string;
+}): Promise<void> {
   const destination = process.env.E2E_DIAGNOSTICS_DIR
     ? path.resolve(process.env.E2E_DIAGNOSTICS_DIR)
-    : path.join(runDir, 'diagnostics');
+    : path.join(os.tmpdir(), `e2e-docker-diagnostics-${Date.now()}`);
   await fs.ensureDir(destination);
-  await registry
-    .captureLogs(path.join(destination, 'registry.log'))
-    .catch(() => {});
-  for (const file of [
-    'backend.iid',
-    'backend-build.log',
-    'test-app/package.json',
-    'test-app/pnpm-lock.yaml',
-    'test-app/pnpm-workspace.yaml',
-    'test-app/packages/backend/package.json',
-  ]) {
-    const source = path.join(runDir, file);
-    if (await fs.pathExists(source)) {
-      await fs.copy(source, path.join(destination, file.replace(/\//g, '-')));
+
+  const withStreams = options.error as Error & {
+    stdout?: string;
+    stderr?: string;
+  };
+  await fs.outputFile(
+    path.join(destination, 'error.log'),
+    [
+      String(options.error),
+      withStreams.stdout ? `\nstdout:\n${withStreams.stdout}` : '',
+      withStreams.stderr ? `\nstderr:\n${withStreams.stderr}` : '',
+    ].join(''),
+  );
+
+  if (options.registry) {
+    await options.registry
+      .captureLogs(path.join(destination, 'registry.log'))
+      .catch(() => {});
+  }
+
+  if (options.runDir) {
+    const appName = options.appName ?? 'test-app';
+    for (const file of [
+      'backend.iid',
+      'backend-build.log',
+      `${appName}/package.json`,
+      `${appName}/pnpm-lock.yaml`,
+      `${appName}/pnpm-workspace.yaml`,
+      `${appName}/packages/backend/package.json`,
+    ]) {
+      const source = path.join(options.runDir, file);
+      if (await fs.pathExists(source)) {
+        await fs.copy(source, path.join(destination, file.replace(/\//g, '-')));
+      }
     }
   }
   print(`Gate diagnostics written to ${destination}`);
