@@ -382,8 +382,12 @@ describeDocker('registry transport gate', () => {
         stderr?: string;
       };
       const output = `${withStreams.stdout ?? ''}\n${withStreams.stderr ?? ''}`;
-      expect(output).toContain(omittedName!);
-      expect(output).toMatch(/404|ERR_PNPM_FETCH_404/);
+      // pnpm wraps long package names across lines in its error output
+      const normalized = output.replace(/\s+/g, '');
+      expect(normalized).toContain(omittedName!.replace(/\s+/g, ''));
+      expect(output).toMatch(
+        /404|ERR_PNPM_FETCH_404|ERR_PNPM_TARBALL_HTTP_STATUS/,
+      );
     } catch (error) {
       await captureDiagnostics({
         runDir: runDir ?? workRoot,
