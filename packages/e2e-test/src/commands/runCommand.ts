@@ -17,12 +17,13 @@
 import os from 'node:os';
 import fs from 'fs-extra';
 import { rm } from 'node:fs/promises';
-import handlebars from 'handlebars';
 import killTree from 'tree-kill';
 import { resolve as resolvePath, join as joinPath } from 'node:path';
 import path from 'node:path';
 import { parseDocument } from 'yaml';
 
+import { createAppFromWorkspace } from '../lib/createApp';
+import { buildDistWorkspace } from '../lib/distWorkspace';
 import { waitFor, print } from '../lib/helpers';
 import { getPackageManager, PackageManager } from '../lib/packageManager';
 
@@ -35,13 +36,6 @@ import { findOwnPaths, runOutput, run } from '@backstage/cli-common';
 
 /* eslint-disable-next-line no-restricted-syntax */
 const ownPaths = findOwnPaths(__dirname);
-
-const templatePackagePaths = [
-  'packages/cli-module-new/templates/frontend-plugin/package.json.hbs',
-  'packages/create-app/templates/default-app/package.json.hbs',
-  'packages/create-app/templates/default-app/packages/app/package.json.hbs',
-  'packages/create-app/templates/default-app/packages/backend/package.json.hbs',
-];
 
 export async function runCommand(opts: OptionValues) {
   const rootDir = await fs.mkdtemp(resolvePath(os.tmpdir(), 'backstage-e2e-'));
@@ -60,7 +54,11 @@ export async function runCommand(opts: OptionValues) {
   }
 
   print('Building dist workspace');
-  const workspaceDir = await buildDistWorkspace('workspace', rootDir);
+  const workspaceDir = await buildDistWorkspace({
+    workspaceName: 'workspace',
+    rootDir,
+    alwaysPack: false,
+  });
 
   // Otherwise yarn will refuse to install with CI=true
   process.env.YARN_ENABLE_IMMUTABLE_INSTALLS = 'false';
@@ -132,100 +130,6 @@ export async function runCommand(opts: OptionValues) {
 }
 
 /**
- * Builds a dist workspace that contains the cli and core packages
- */
-async function buildDistWorkspace(workspaceName: string, rootDir: string) {
-  const workspaceDir = resolvePath(rootDir, workspaceName);
-  await fs.ensureDir(workspaceDir);
-
-  // We grab the needed dependencies from the create app template
-  const createAppDeps = new Set<string>();
-
-  function appendDeps(pkg: any) {
-    Array<string>()
-      .concat(
-        Object.keys(pkg.dependencies ?? {}),
-        Object.keys(pkg.devDependencies ?? {}),
-        Object.keys(pkg.peerDependencies ?? {}),
-      )
-      .filter(name => name.startsWith('@backstage/'))
-      .forEach(dep => createAppDeps.add(dep));
-  }
-
-  for (const pkgJsonPath of templatePackagePaths) {
-    const jsonPath = ownPaths.resolveRoot(pkgJsonPath);
-    const pkgTemplate = await fs.readFile(jsonPath, 'utf8');
-    const pkg = JSON.parse(
-      handlebars.compile(pkgTemplate)(
-        {
-          privatePackage: true,
-          scopeName: '@backstage',
-        },
-        {
-          helpers: {
-            version(name: string) {
-              // Ignore non Backstage packages
-              if (!name.startsWith('@backstage/')) {
-                return '^0.0.0';
-              }
-              const pkge = require(`${name}/package.json`);
-              if (!pkge) {
-                throw new Error(`No version available for package ${name}`);
-              }
-              return pkge.version;
-            },
-            versionQuery(name: string, hint: string) {
-              // Ignore non Backstage packages
-              if (!name.startsWith('@backstage/')) {
-                return '^0.0.0';
-              }
-              const pkgData = require(`${name}/package.json`);
-              if (!pkgData) {
-                if (typeof hint !== 'string') {
-                  throw new Error(`No version available for package ${name}`);
-                }
-                return `^${hint}`;
-              }
-              return `^${pkgData.version}`;
-            },
-          },
-        },
-      ),
-    );
-    appendDeps(pkg);
-  }
-
-  // eslint-disable-next-line @backstage/no-forbidden-package-imports
-  appendDeps(require('@backstage/create-app/package.json'));
-
-  print(`Preparing workspace`);
-  await runOutput([
-    'yarn',
-    'backstage-cli',
-    'build-workspace',
-    workspaceDir,
-    '@backstage/create-app',
-    ...createAppDeps,
-  ]);
-
-  print('Pinning yarn version in workspace');
-  await pinYarnVersion(workspaceDir);
-
-  const yarnPatchesPath = ownPaths.resolveRoot('.yarn/patches');
-  if (await fs.pathExists(yarnPatchesPath)) {
-    print('Copying yarn patches');
-    await fs.copy(yarnPatchesPath, resolvePath(workspaceDir, '.yarn/patches'));
-  }
-
-  print('Installing workspace dependencies');
-  await runOutput(['yarn', 'workspaces', 'focus', '--all', '--production'], {
-    cwd: workspaceDir,
-  });
-
-  return workspaceDir;
-}
-
-/**
  * Pin the yarn version in a directory to the one we're using in the Backstage repo
  */
 async function pinYarnVersion(dir: string) {
@@ -276,97 +180,70 @@ async function createApp(
   nodeLinker?: string,
   keepPnpmVersion?: boolean,
 ) {
-  const child = run(
-    [
-      'node',
-      resolvePath(workspaceDir, 'packages/create-app/bin/backstage-create-app'),
-      '--skip-install',
-      ...pm.createAppArgs(),
-    ],
-    {
-      cwd: rootDir,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    },
+  const appDir = await createAppFromWorkspace({
+    appName,
+    workspaceDir,
+    rootDir,
+    packageManager: pm,
+  });
+
+  if (pm.name === 'yarn') {
+    print('Overriding yarn.lock with seed file from the create-app package');
+    await overrideYarnLockSeed(appDir);
+  }
+
+  print('Rewriting module resolutions of app to use workspace packages');
+  await overrideModuleResolutions(appDir, workspaceDir, pm);
+
+  // Yarn does not clean up node_module folders in the linked in dependencies by itself
+  print('Cleaning up node_modules in workspace');
+  await fs.remove(resolvePath(workspaceDir, 'node_modules'));
+  for (const wsDir of ['packages', 'plugins']) {
+    for (const dir of await fs.readdir(resolvePath(workspaceDir, wsDir))) {
+      const moduleDir = resolvePath(workspaceDir, wsDir, dir, 'node_modules');
+      if (await fs.pathExists(moduleDir)) {
+        await fs.remove(moduleDir);
+      }
+    }
+  }
+
+  if (pm.name === 'yarn') {
+    print('Pinning yarn version and registry in app');
+    await pinYarnVersion(appDir);
+  } else {
+    print(
+      'Pinning pnpm version, relaxing install checks and pinning registry in app',
+    );
+    // pnpm switches to the version that the template pins by itself
+    if (keepPnpmVersion) {
+      await checkPinnedPnpmVersion(appDir);
+    } else {
+      await pinPnpmVersion(appDir);
+    }
+    await relaxPnpmInstallChecks(appDir);
+    if (nodeLinker) {
+      print(`Switching the app to the ${nodeLinker} node linker`);
+      await setPnpmNodeLinker(appDir, nodeLinker);
+    }
+  }
+  await fs.writeFile(
+    resolvePath(appDir, '.npmrc'),
+    'registry=https://registry.npmjs.org/\n',
   );
 
-  try {
-    let stdout = '';
-    child.stdout?.on('data', data => {
-      stdout = stdout + data.toString('utf8');
-    });
+  print('Test app created');
 
-    await waitFor(() => stdout.includes('Enter a name for the app'));
-    child.stdin?.write(`${appName}\n`);
-
-    print('Waiting for app create script to be done');
-    await child.waitForExit();
-
-    const appDir = resolvePath(rootDir, appName);
-
-    if (pm.name === 'yarn') {
-      print('Overriding yarn.lock with seed file from the create-app package');
-      await overrideYarnLockSeed(appDir);
-    }
-
-    print('Rewriting module resolutions of app to use workspace packages');
-    await overrideModuleResolutions(appDir, workspaceDir, pm);
-
-    // Yarn does not clean up node_module folders in the linked in dependencies by itself
-    print('Cleaning up node_modules in workspace');
-    await fs.remove(resolvePath(workspaceDir, 'node_modules'));
-    for (const wsDir of ['packages', 'plugins']) {
-      for (const dir of await fs.readdir(resolvePath(workspaceDir, wsDir))) {
-        const moduleDir = resolvePath(workspaceDir, wsDir, dir, 'node_modules');
-        if (await fs.pathExists(moduleDir)) {
-          await fs.remove(moduleDir);
-        }
-      }
-    }
-
-    if (pm.name === 'yarn') {
-      print('Pinning yarn version and registry in app');
-      await pinYarnVersion(appDir);
-    } else {
-      print(
-        'Pinning pnpm version, relaxing install checks and pinning registry in app',
-      );
-      // pnpm switches to the version that the template pins by itself
-      if (keepPnpmVersion) {
-        await checkPinnedPnpmVersion(appDir);
-      } else {
-        await pinPnpmVersion(appDir);
-      }
-      await relaxPnpmInstallChecks(appDir);
-      if (nodeLinker) {
-        print(`Switching the app to the ${nodeLinker} node linker`);
-        await setPnpmNodeLinker(appDir, nodeLinker);
-      }
-    }
-    await fs.writeFile(
-      resolvePath(appDir, '.npmrc'),
-      'registry=https://registry.npmjs.org/\n',
-    );
-
-    print('Test app created');
-
-    for (const cmd of [
-      pm.install(),
-      ...[
-        'tsc:full',
-        'build:all',
-        'lint:all',
-        'prettier:check',
-        'test:all',
-      ].map(script => pm.run(script)),
-    ]) {
-      print(`Running '${cmd.join(' ')}' in newly created app`);
-      await runOutput(cmd, { cwd: appDir });
-    }
-
-    return appDir;
-  } finally {
-    child.kill();
+  for (const cmd of [
+    pm.install(),
+    ...['tsc:full', 'build:all', 'lint:all', 'prettier:check', 'test:all'].map(
+      script => pm.run(script),
+    ),
+  ]) {
+    print(`Running '${cmd.join(' ')}' in newly created app`);
+    await runOutput(cmd, { cwd: appDir });
   }
+
+  return appDir;
 }
 
 /**

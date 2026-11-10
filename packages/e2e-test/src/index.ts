@@ -32,7 +32,7 @@ async function main(argv: string[]) {
     process.exit(1);
   });
 
-  program.parse(argv);
+  await program.parseAsync(argv);
 }
 
 main(process.argv).catch(err => {
