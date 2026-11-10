@@ -18,6 +18,12 @@ Once those tasks have completed, you can now run the test using `yarn e2e-test r
 
 If you make changes to other packages you will need to rerun `yarn tsc && yarn build`. Changes to this package do not require a rebuild.
 
+## Docker smoke test
+
+On Linux with Docker and Buildx, `yarn e2e-test run-docker` packs the packages in this checkout with `--always-pack`, serves them from a disposable local registry, generates the default pnpm application, and builds its unchanged production Dockerfile. The run stops after the build, so it does not perform runtime checks yet.
+
+The command needs the normal repository build first (`yarn install && yarn tsc && yarn backstage-cli repo build`) and pnpm 12.14.0. Pass `--keep` to retain the generated application, and `--artifacts-directory <path>` to collect logs, the package inventory, the image ID, and phase timings. It does not run on macOS or Windows.
+
 ## Documentation
 
 - [Backstage Readme](https://github.com/backstage/backstage/blob/master/README.md)
