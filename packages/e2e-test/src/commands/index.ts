@@ -16,6 +16,7 @@
 
 import { Command, Option } from 'commander';
 import { runCommand } from './runCommand';
+import { runDockerCommand } from './runDockerCommand';
 
 export function registerCommands(program: Command) {
   program
@@ -41,4 +42,16 @@ export function registerCommands(program: Command) {
     )
     .description('Run e2e tests')
     .action(runCommand);
+
+  program
+    .command('run-docker')
+    .option('--keep', 'Do not remove the temporary dir after the run completes')
+    .option(
+      '--artifacts-directory <path>',
+      'Directory for the logs and the run summary',
+    )
+    .description(
+      'Build the generated app image from the packages in this checkout',
+    )
+    .action(runDockerCommand);
 }
