@@ -218,6 +218,9 @@ describe('startRegistry', () => {
       expect(runOutputMock).toHaveBeenCalledWith(
         expect.arrayContaining(['docker', 'run', '--name', 'run-registry']),
       );
+      // Verdaccio runs as a different user on Linux and must be able to write.
+      const storage = await fs.stat(path.join(workDir, 'storage'));
+      expect(storage.mode & 0o777).toBe(0o777);
     } finally {
       await fs.remove(workDir);
     }

@@ -191,7 +191,9 @@ export async function startRegistry(options: {
     }),
   );
   await fs.outputFile(path.join(confDir, 'htpasswd'), '');
-  await fs.ensureDir(storageDir);
+  // The disposable storage must be writable by the container user on Linux.
+  await fs.ensureDir(storageDir, { mode: 0o777 });
+  await fs.chmod(storageDir, 0o777);
 
   const containerName = `${options.runId}-registry`;
   const url = await startContainer(

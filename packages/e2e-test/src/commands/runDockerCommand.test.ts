@@ -16,6 +16,8 @@
 
 import type { RegistryFixture } from '../lib/packageRegistry';
 import {
+  assertHostNodeVersion,
+  assertImageVersions,
   assertSupportedPlatform,
   isNodeVersionAtLeast,
   parseBaseImage,
@@ -44,6 +46,34 @@ describe('runDockerPhases', () => {
 
     await expect(runDockerPhases(phases)).rejects.toThrow('image build failed');
     expect(stop).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('assertHostNodeVersion', () => {
+  it('requires the host to run the base image Node version', () => {
+    expect(() => assertHostNodeVersion('24.15.0', '24.15.0')).not.toThrow();
+    expect(() => assertHostNodeVersion('24.15.0', '26.0.0')).toThrow(
+      'The template base image runs Node 24.15.0, but the host runs Node 26.0.0',
+    );
+  });
+});
+
+describe('assertImageVersions', () => {
+  const versions = {
+    expectedNode: '24.15.0',
+    expectedPnpm: '12.14.0',
+    actualNode: '24.15.0',
+    actualPnpm: '12.14.0',
+  };
+
+  it('accepts matching versions and rejects each mismatch', () => {
+    expect(() => assertImageVersions(versions)).not.toThrow();
+    expect(() =>
+      assertImageVersions({ ...versions, actualNode: '26.0.0' }),
+    ).toThrow('runs Node 26.0.0, expected Node 24.15.0');
+    expect(() =>
+      assertImageVersions({ ...versions, actualPnpm: '11.28.0' }),
+    ).toThrow('runs pnpm 11.28.0, expected pnpm 12.14.0');
   });
 });
 

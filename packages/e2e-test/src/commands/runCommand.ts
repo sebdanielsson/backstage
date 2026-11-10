@@ -23,7 +23,7 @@ import path from 'node:path';
 import { parseDocument } from 'yaml';
 
 import { createAppFromWorkspace } from '../lib/createApp';
-import { buildDistWorkspace } from '../lib/distWorkspace';
+import { buildDistWorkspace, pinYarnVersion } from '../lib/distWorkspace';
 import { waitFor, print } from '../lib/helpers';
 import { getPackageManager, PackageManager } from '../lib/packageManager';
 
@@ -127,46 +127,6 @@ export async function runCommand(opts: OptionValues) {
 
   // Just in case some child process was left hanging
   process.exit(0);
-}
-
-/**
- * Pin the yarn version in a directory to the one we're using in the Backstage repo
- */
-async function pinYarnVersion(dir: string) {
-  const yarnRc = await fs.readFile(ownPaths.resolveRoot('.yarnrc.yml'), 'utf8');
-  const yarnRcLines = yarnRc.split(/\r?\n/);
-  const yarnPathLine = yarnRcLines.find(line => line.startsWith('yarnPath:'));
-  if (!yarnPathLine) {
-    throw new Error(`Unable to find 'yarnPath' in ${yarnRc}`);
-  }
-  const match = yarnPathLine.match(/^yarnPath: (.*)$/);
-  if (!match) {
-    throw new Error(`Invalid 'yarnPath' in ${yarnRc}`);
-  }
-  const [, localYarnPath] = match;
-  const yarnPath = ownPaths.resolveRoot(localYarnPath);
-  const yarnPluginPath = ownPaths.resolveRoot(
-    localYarnPath,
-    '../../plugins/@yarnpkg/plugin-workspace-tools.cjs',
-  );
-
-  // Intentionally writes a minimal yarnrc rather than merging with the template's.
-  // The create-app template enables `npmMinimalAgeGate`, which would block e2e runs
-  // from validating freshly-published dependency bumps and ecosystem-fix releases.
-  // New Yarn defaults must be set explicitly so install does not rewrite this file.
-  await fs.writeFile(
-    resolvePath(dir, '.yarnrc.yml'),
-    `yarnPath: ${yarnPath}
-nodeLinker: node-modules
-enableGlobalCache: true
-enableScripts: true
-npmMinimalAgeGate: 0
-approvedGitRepositories: []
-plugins:
-  - path: ${yarnPluginPath}
-    spec: '@yarnpkg/plugin-workspace-tools'
-`,
-  );
 }
 
 /**

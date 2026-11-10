@@ -346,7 +346,7 @@ export function repositoryPackageNames(
 /**
  * Pin the yarn version in a directory to the one we're using in the Backstage repo
  */
-async function pinYarnVersion(dir: string) {
+export async function pinYarnVersion(dir: string) {
   const yarnRc = await fs.readFile(ownPaths.resolveRoot('.yarnrc.yml'), 'utf8');
   const yarnRcLines = yarnRc.split(/\r?\n/);
   const yarnPathLine = yarnRcLines.find(line => line.startsWith('yarnPath:'));

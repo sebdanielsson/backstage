@@ -70,6 +70,8 @@ export type DockerRunPhases = {
     cleanup: CleanupStack,
   ): Promise<{
     imageId: string;
+    baseImage: string;
+    baseImageDigest: string;
     nodeVersion: string;
     pnpmVersion: string;
     artifactCoverage: { verified: number; expected: number };
@@ -78,6 +80,8 @@ export type DockerRunPhases = {
 
 export type DockerSmokeResult = {
   imageId: string;
+  baseImage: string;
+  baseImageDigest: string;
   sourceCommit: string;
   nodeVersion: string;
   pnpmVersion: string;
@@ -119,9 +123,70 @@ export function isNodeVersionAtLeast(
 }
 
 /**
+ * Checks that the host runs the same Node version as the template base image,
+ * since the host build steps must match the image.
+ */
+export function assertHostNodeVersion(expected: string, actual: string): void {
+  if (actual !== expected) {
+    throw new Error(
+      `The template base image runs Node ${expected}, but the host runs Node ${actual}`,
+    );
+  }
+}
+
+/**
+ * Checks that the built application image runs the Node and pnpm versions that
+ * the host build used.
+ */
+export function assertImageVersions(options: {
+  expectedNode: string;
+  expectedPnpm: string;
+  actualNode: string;
+  actualPnpm: string;
+}): void {
+  const { expectedNode, expectedPnpm, actualNode, actualPnpm } = options;
+  if (actualNode !== expectedNode) {
+    throw new Error(
+      `The application image runs Node ${actualNode}, expected Node ${expectedNode}`,
+    );
+  }
+  if (actualPnpm !== expectedPnpm) {
+    throw new Error(
+      `The application image runs pnpm ${actualPnpm}, expected pnpm ${expectedPnpm}`,
+    );
+  }
+}
+
+async function readImageDigest(image: string): Promise<string> {
+  try {
+    return await runOutput([
+      'docker',
+      'image',
+      'inspect',
+      '--format',
+      '{{index .RepoDigests 0}}',
+      image,
+    ]);
+  } catch {
+    return await runOutput([
+      'docker',
+      'image',
+      'inspect',
+      '--format',
+      '{{.Id}}',
+      image,
+    ]);
+  }
+}
+
+/**
  * Checks the host toolchain before any expensive work starts.
  */
-async function runPreflight(repoRoot: string): Promise<void> {
+async function runPreflight(repoRoot: string): Promise<{
+  baseImage: string;
+  baseImageDigest: string;
+  nodeVersion: string;
+}> {
   assertSupportedPlatform(process.platform);
   await runOutput(['docker', 'version']);
   await runOutput(['docker', 'buildx', 'version']);
@@ -132,23 +197,29 @@ async function runPreflight(repoRoot: string): Promise<void> {
     repoRoot,
     'packages/create-app/templates/default-app/packages/backend/Dockerfile.hbs',
   );
-  const image = parseBaseImage(await fs.readFile(dockerfilePath, 'utf8'));
-  await runOutput(['docker', 'pull', image]);
+  const baseImage = parseBaseImage(await fs.readFile(dockerfilePath, 'utf8'));
+  await runOutput(['docker', 'pull', baseImage]);
   const version = await runOutput([
     'docker',
     'run',
     '--rm',
     '--entrypoint',
     'node',
-    image,
+    baseImage,
     '--version',
   ]);
-  if (!isNodeVersionAtLeast(version, MINIMUM_BASE_NODE_VERSION)) {
+  const nodeVersion = version.replace(/^v/, '');
+  if (!isNodeVersionAtLeast(nodeVersion, MINIMUM_BASE_NODE_VERSION)) {
     throw new Error(
-      `The template base image ${image} provides Node ${version}, expected at least ${MINIMUM_BASE_NODE_VERSION}`,
+      `The template base image ${baseImage} provides Node ${nodeVersion}, expected at least ${MINIMUM_BASE_NODE_VERSION}`,
     );
   }
-  print(`Base image ${image} provides Node ${version.replace(/^v/, '')}`);
+  assertHostNodeVersion(nodeVersion, process.versions.node);
+  const baseImageDigest = await readImageDigest(baseImage);
+  print(
+    `Base image ${baseImage} (${baseImageDigest}) provides Node ${nodeVersion}`,
+  );
+  return { baseImage, baseImageDigest, nodeVersion };
 }
 
 /**
@@ -225,7 +296,7 @@ export async function runDockerCommand(opts: {
 }): Promise<void> {
   /* eslint-disable-next-line no-restricted-syntax */
   const repoRoot = findOwnPaths(__dirname).rootDir;
-  await runPreflight(repoRoot);
+  const preflight = await runPreflight(repoRoot);
 
   const sourceCommit = await runOutput(['git', 'rev-parse', 'HEAD'], {
     cwd: repoRoot,
@@ -360,9 +431,18 @@ export async function runDockerCommand(opts: {
         artifactsDir,
       });
       const versions = await readImageVersions({ imageId });
+      const { packageManager } = await readGeneratedConfig(appDir);
+      assertImageVersions({
+        expectedNode: preflight.nodeVersion,
+        expectedPnpm: packageManager.replace(/^pnpm@/, ''),
+        actualNode: versions.node,
+        actualPnpm: versions.pnpm,
+      });
       print(`Built ${imageId}: node ${versions.node}, pnpm ${versions.pnpm}`);
       return {
         imageId,
+        baseImage: preflight.baseImage,
+        baseImageDigest: preflight.baseImageDigest,
         nodeVersion: versions.node,
         pnpmVersion: versions.pnpm,
         artifactCoverage: { verified: coverage.verified, expected },
