@@ -191,7 +191,7 @@ export async function buildAppImage(
   });
 
   const after = await Promise.all(files.map(hashFile));
-  const changed = files.filter((file, index) => before[index] !== after[index]);
+  const changed = files.filter((_, index) => before[index] !== after[index]);
   if (changed.length > 0) {
     throw new Error(
       `Deployment artifacts changed during the image build: ${changed.join(
