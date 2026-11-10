@@ -16,6 +16,8 @@
 
 import { runOutput } from '@backstage/cli-common';
 import fs from 'fs-extra';
+import path from 'node:path';
+import { hashFile, validateDeploymentArtifacts } from './appBuild';
 
 /**
  * Builds the argument list for `docker buildx create`.
@@ -130,7 +132,8 @@ export async function createOwnedBuilder(runId: string): Promise<OwnedBuilder> {
 }
 
 /**
- * Reads the Node and pnpm versions reported by an application image.
+ * Reads the Node and pnpm versions reported by an application image, without
+ * the leading `v` that `node --version` prints.
  */
 export async function readImageVersions(options: {
   imageId: string;
@@ -153,5 +156,48 @@ export async function readImageVersions(options: {
     options.imageId,
     '--version',
   ]);
-  return { node: node.trim(), pnpm: pnpm.trim() };
+  return {
+    node: node.trim().replace(/^v/, ''),
+    pnpm: pnpm.trim().replace(/^v/, ''),
+  };
+}
+
+/**
+ * Builds the generated application's backend image from its deployment
+ * archives, and throws if Docker observed inputs that changed mid-build.
+ */
+export async function buildAppImage(
+  builder: OwnedBuilder,
+  options: {
+    appDir: string;
+    consumerNpmrcPath: string;
+    artifactsDir: string;
+  },
+): Promise<{ imageId: string; buildLog: string }> {
+  const { dockerfile, skeleton, bundle } = await validateDeploymentArtifacts(
+    options.appDir,
+  );
+  const files = [dockerfile, skeleton, bundle];
+  const before = await Promise.all(files.map(hashFile));
+  const buildLog = path.join(options.artifactsDir, 'docker-build.log');
+  await fs.ensureDir(options.artifactsDir);
+
+  const imageId = await builder.build({
+    contextDir: options.appDir,
+    dockerfile,
+    npmrcPath: options.consumerNpmrcPath,
+    iidFile: path.join(options.artifactsDir, 'image-id'),
+    logPath: buildLog,
+  });
+
+  const after = await Promise.all(files.map(hashFile));
+  const changed = files.filter((file, index) => before[index] !== after[index]);
+  if (changed.length > 0) {
+    throw new Error(
+      `Deployment artifacts changed during the image build: ${changed.join(
+        ', ',
+      )}`,
+    );
+  }
+  return { imageId, buildLog };
 }
