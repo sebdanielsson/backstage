@@ -18,7 +18,7 @@ creating an app using
 you receive a project that's already prepared with a typical setup and package
 scripts for executing the most common commands.
 
-Under the hood the CLI uses [Webpack](https://webpack.js.org/) for bundling,
+Under the hood the CLI uses [Rspack](https://rspack.rs/) for bundling,
 [Rollup](https://rollupjs.org/) for building packages,
 [Jest](https://jestjs.io/) for testing, and [eslint](https://eslint.org/) for
 linting. It also includes tooling for working within Backstage apps, for example

@@ -308,19 +308,20 @@ createDevApp({ features: [myPlugin] });
 
 For the legacy frontend system, the `@backstage/dev-utils` package provides equivalent helpers.
 
-The frontend development bundling is currently based on
-[Webpack](https://webpack.js.org/) and
-[Webpack Dev Server](https://webpack.js.org/configuration/dev-server/). The
-Webpack configuration itself varies very little between the frontend development
-and production bundling, so we'll dive more into the configuration in the
-production section below. The main differences are that `process.env.NODE_ENV`
-is set to `'development'`, minification is disabled, cheap source maps are used,
-and [React Refresh](https://github.com/pmmmwh/react-refresh-webpack-plugin#readme)
-is enabled.
+The frontend development bundling is based on [Rspack](https://rspack.rs/) and
+its [dev server](https://rspack.rs/config/dev-server). The Rspack configuration
+itself varies very little between the frontend development and production
+bundling, so we'll dive more into the configuration in the production section
+below. The main differences are that `process.env.NODE_ENV` is set to
+`'development'`, minification is disabled, cheap source maps are used, styles
+are injected from JavaScript instead of being written to separate files, and
+[React Refresh](https://github.com/rstackjs/rspack-plugin-react-refresh) is
+enabled.
 
-If you prefer to run type checking and linting as part of the Webpack process,
-you can enable usage of the
-[`ForkTsCheckerWebpackPlugin`](https://www.npmjs.com/package/fork-ts-checker-webpack-plugin)
+If you prefer to run type checking and linting as part of the Rspack process,
+you can enable
+[`ts-checker-rspack-plugin`](https://www.npmjs.com/package/ts-checker-rspack-plugin)
+and [`eslint-rspack-plugin`](https://www.npmjs.com/package/eslint-rspack-plugin)
 by passing the `--check` flag. Although as mentioned above, the recommended way
 to handle these checks during development is to use an editor that has built-in
 support for them instead.
@@ -335,7 +336,7 @@ build a production bundle of an individual plugin.
 The output of the bundling process is written to the `dist` folder in the package.
 
 Just like the development bundling, the production bundling is based on
-[Webpack](https://webpack.js.org/). It uses the
+[Rspack](https://rspack.rs/). It uses the
 [`HtmlWebpackPlugin`](https://webpack.js.org/plugins/html-webpack-plugin/) to
 generate the `index.html` entry point, and includes a default template that's
 included with the CLI. You can replace the bundled template by adding
@@ -344,14 +345,11 @@ constants, `publicPath` which is the public base path that the bundle is
 intended to be served at, as well as `config` which is your regular frontend
 scoped configuration from `@backstage/config`.
 
-The Webpack configuration also includes a custom plugin for resolving packages
-correctly from linked in packages, the `ModuleScopePlugin` from
-[`react-dev-utils`](https://www.npmjs.com/package/react-dev-utils) which makes
-sure that imports don't reach outside the package, a few fallbacks for some
-Node.js modules like `'buffer'` and `'events'`, a plugin that writes the
-frontend configuration to the bundle as `process.env.APP_CONFIG`, and lastly minification handled by
-[esbuild](https://esbuild.github.io/) using the
-[`esbuild-loader`](https://npm.im/esbuild-loader). There are of course also a
+The Rspack configuration also includes a custom plugin for resolving packages
+correctly from linked in packages, a few fallbacks for some Node.js modules like
+`'buffer'` and `'events'`, a plugin that injects the frontend configuration into
+`index.html`, Rspack's built-in CSS support, and lastly minification handled by
+Rspack's built-in SWC and Lightning CSS minimizers. There are of course also a
 set of loaders configured, which you can read more about in the
 [loaders](#loaders) and [transpilation](#transpilation) sections.
 

@@ -34,9 +34,9 @@ export const optimization = (
     maxAsyncRequests: Infinity,
     maxInitialRequests: Infinity,
     reuseExistingChunk: true,
-    // Extracted styles retain the ordering of their importing chunks. Sharing
-    // them across unrelated lazy boundaries can introduce conflicting orders.
-    type: /^(?!css\/mini-extract$)/,
+    // Stylesheets retain the ordering of their importing chunks. Sharing them
+    // across unrelated lazy boundaries can introduce conflicting orders.
+    type: /^(?!css(\/|$))/,
   };
 
   return {
