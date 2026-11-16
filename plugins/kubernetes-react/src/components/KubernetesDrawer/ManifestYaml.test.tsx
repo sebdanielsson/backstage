@@ -32,7 +32,7 @@ describe('ManifestYaml', () => {
     expect(container.textContent).toContain('replicas');
     expect(container.textContent).not.toContain('managedFields');
 
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('switch'));
     expect(container.textContent).toContain('managedFields');
     expect(container.textContent).toContain('kubectl');
     expect(container.textContent).toContain('controller');

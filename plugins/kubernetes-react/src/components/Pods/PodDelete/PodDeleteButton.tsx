@@ -15,12 +15,8 @@
  */
 import { useState } from 'react';
 
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import CardActions from '@material-ui/core/CardActions';
-import Button from '@material-ui/core/Button';
-import DeleteIcon from '@material-ui/icons/Close';
-import CircularProgress from '@material-ui/core/CircularProgress';
+import { Button, Flex, Text } from '@backstage/ui';
+import { RiCloseLine } from '@remixicon/react';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../../translation';
 
@@ -61,33 +57,30 @@ export const PodDeleteButton = ({ podScope }: PodDeleteButtonProps) => {
   };
 
   return (
-    <Grid container item xs={12}>
-      <Grid item xs={12}>
-        <CardActions>
-          <Button
-            variant="outlined"
-            aria-label={buttonText}
-            component="label"
-            onClick={handleDeleteClick}
-            startIcon={
-              isLoading ? <CircularProgress size={18} /> : <DeleteIcon />
-            }
-            disabled={isLoading}
-          >
-            {buttonText}
-          </Button>
-        </CardActions>
-        {hasError && (
-          <Typography
-            variant="body1"
-            color="error"
-            style={{ textAlign: 'right' }}
-          >
-            Could not delete the pod. Please check the console for the full
-            report.
-          </Typography>
-        )}
-      </Grid>
-    </Grid>
+    <div>
+      <Flex align="center" p="2">
+        <Button
+          variant="secondary"
+          size="medium"
+          aria-label={buttonText}
+          onPress={handleDeleteClick}
+          iconStart={<RiCloseLine size={20} />}
+          isPending={isLoading}
+        >
+          {buttonText}
+        </Button>
+      </Flex>
+      {hasError && (
+        <Text
+          as="p"
+          variant="body-large"
+          color="danger"
+          style={{ textAlign: 'right' }}
+        >
+          Could not delete the pod. Please check the console for the full
+          report.
+        </Text>
+      )}
+    </div>
   );
 };

@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Flex, Text } from '@backstage/ui';
 import type { V1Job } from '@kubernetes/client-node';
 import { KubernetesStructuredMetadataTableDrawer } from '../KubernetesDrawer';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
 
 export const JobDrawer = ({
   job,
@@ -39,24 +38,14 @@ export const JobDrawer = ({
         };
       }}
     >
-      <Grid
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item>
-          <Typography variant="body1">
-            {job.metadata?.name ?? 'unknown object'}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="textSecondary" variant="subtitle1">
-            Job
-          </Typography>
-        </Grid>
-      </Grid>
+      <Flex direction="column" align="start" gap="0">
+        <Text variant="body-large">
+          {job.metadata?.name ?? 'unknown object'}
+        </Text>
+        <Text variant="body-large" color="secondary">
+          Job
+        </Text>
+      </Flex>
     </KubernetesStructuredMetadataTableDrawer>
   );
 };

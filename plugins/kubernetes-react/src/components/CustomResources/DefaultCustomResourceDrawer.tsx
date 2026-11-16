@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
+import { Flex, Text } from '@backstage/ui';
 import { KubernetesStructuredMetadataTableDrawer } from '../KubernetesDrawer';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
 
 const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
@@ -38,24 +37,14 @@ export const DefaultCustomResourceDrawer = ({
       kind={capitalizedName}
       renderObject={cr => cr}
     >
-      <Grid
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item>
-          <Typography variant="body1">
-            {customResource.metadata?.name ?? 'unknown object'}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="textSecondary" variant="subtitle1">
-            {capitalizedName}
-          </Typography>
-        </Grid>
-      </Grid>
+      <Flex direction="column" align="start" gap="0">
+        <Text variant="body-large">
+          {customResource.metadata?.name ?? 'unknown object'}
+        </Text>
+        <Text variant="body-large" color="secondary">
+          {capitalizedName}
+        </Text>
+      </Flex>
     </KubernetesStructuredMetadataTableDrawer>
   );
 };

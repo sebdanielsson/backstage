@@ -15,12 +15,14 @@
  */
 import { StructuredMetadataTable } from '@backstage/core-components';
 import { ClientContainerStatus } from '@backstage/plugin-kubernetes-common';
-import Card from '@material-ui/core/Card';
-import CardActions from '@material-ui/core/CardActions';
-import CardContent from '@material-ui/core/CardContent';
-import CardHeader from '@material-ui/core/CardHeader';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  Flex,
+  Text,
+} from '@backstage/ui';
 import { IContainer, IContainerStatus } from 'kubernetes-models/v1';
 import { DateTime } from 'luxon';
 
@@ -81,12 +83,12 @@ interface ContainerDatetimeProps {
 
 const ContainerDatetime = ({ prefix, dateTime }: ContainerDatetimeProps) => {
   return (
-    <Typography variant="subtitle2">
+    <Text as="p" variant="body-medium" weight="bold">
       {prefix}:{' '}
       {DateTime.fromISO(dateTime).toRelative({
         locale: 'en',
       })}
-    </Typography>
+    </Text>
   );
 };
 
@@ -118,20 +120,28 @@ export function ContainerCard({
 
   // This should never be undefined
   if (containerSpec === undefined) {
-    return <Typography>error reading pod from cluster</Typography>;
+    return (
+      <Text as="p" variant="body-large">
+        error reading pod from cluster
+      </Text>
+    );
   }
   const containerStartedTime = getStartedAtTime(containerStatus);
   const containerFinishedTime = containerStatus.state?.terminated?.finishedAt;
 
   return (
     <Card>
-      <CardHeader
-        title={containerStatus.name}
-        subheader={containerStatus.image}
-      />
-      <CardContent>
-        <Grid container>
-          <Grid item xs={12}>
+      <CardHeader>
+        <Text as="h3" variant="title-small" weight="bold">
+          {containerStatus.name}
+        </Text>
+        <Text as="p" variant="body-large" color="secondary">
+          {containerStatus.image}
+        </Text>
+      </CardHeader>
+      <CardBody>
+        <Flex direction="column" gap="4">
+          <div>
             {containerStartedTime && (
               <ContainerDatetime
                 prefix="Started"
@@ -145,7 +155,7 @@ export function ContainerCard({
               />
             )}
             {containerStartedTime && containerFinishedTime && (
-              <Typography variant="subtitle2">
+              <Text as="p" variant="body-medium" weight="bold">
                 Execution time:{' '}
                 {DateTime.fromISO(containerFinishedTime)
                   .diff(DateTime.fromISO(containerStartedTime), [
@@ -154,41 +164,30 @@ export function ContainerCard({
                     'seconds',
                   ])
                   .toHuman()}
-              </Typography>
+              </Text>
             )}
-          </Grid>
-          <Grid item xs={12}>
-            <Typography variant="subtitle2">
-              Status: {getCurrentState(containerStatus)}
-            </Typography>
-          </Grid>
+          </div>
+          <Text as="p" variant="body-medium" weight="bold">
+            Status: {getCurrentState(containerStatus)}
+          </Text>
           {containerStatus.restartCount > 0 && (
-            <Grid item xs={12}>
-              <Typography variant="subtitle2">
-                Restarts: {containerStatus.restartCount}
-              </Typography>
-            </Grid>
+            <Text as="p" variant="body-medium" weight="bold">
+              Restarts: {containerStatus.restartCount}
+            </Text>
           )}
-          <Grid item xs={12}>
-            <Typography variant="subtitle2">Container health</Typography>
-          </Grid>
-          <Grid item xs={12}>
-            <StructuredMetadataTable
-              metadata={getContainerHealthChecks(
-                containerSpec,
-                containerStatus,
-              )}
-              options={{ nestedValuesAsYaml: true }}
-            />
-          </Grid>
+          <Text as="p" variant="body-medium" weight="bold">
+            Container health
+          </Text>
+          <StructuredMetadataTable
+            metadata={getContainerHealthChecks(containerSpec, containerStatus)}
+            options={{ nestedValuesAsYaml: true }}
+          />
           {containerMetrics && (
-            <Grid container item xs={12} spacing={0}>
-              <Grid item xs={12}>
-                <Typography variant="subtitle1">
-                  {t('podDrawer.resourceUtilization')}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} style={{ minHeight: '5rem' }}>
+            <div>
+              <Text as="p" variant="body-large">
+                {t('podDrawer.resourceUtilization')}
+              </Text>
+              <div style={{ minHeight: '5rem' }}>
                 <ResourceUtilization
                   compressed
                   title={t('podDrawer.cpuRequests')}
@@ -225,27 +224,29 @@ export function ContainerCard({
                     containerMetrics.memoryUsage.limitTotal,
                   )}
                 />
-              </Grid>
-            </Grid>
+              </div>
+            </div>
           )}
-        </Grid>
-      </CardContent>
-      <CardActions>
-        <PodLogsDialog
-          containerScope={{
-            containerName: containerStatus.name,
-            ...podScope,
-          }}
-        />
-        {isPodExecTerminalEnabled && (
-          <PodExecTerminalDialog
-            cluster={podScope.cluster}
-            containerName={containerStatus.name}
-            podName={podScope.podName}
-            podNamespace={podScope.podNamespace}
+        </Flex>
+      </CardBody>
+      <CardFooter>
+        <Flex justify="end" gap="2">
+          <PodLogsDialog
+            containerScope={{
+              containerName: containerStatus.name,
+              ...podScope,
+            }}
           />
-        )}
-      </CardActions>
+          {isPodExecTerminalEnabled && (
+            <PodExecTerminalDialog
+              cluster={podScope.cluster}
+              containerName={containerStatus.name}
+              podName={podScope.podName}
+              podNamespace={podScope.podNamespace}
+            />
+          )}
+        </Flex>
+      </CardFooter>
     </Card>
   );
 }

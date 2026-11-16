@@ -13,28 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Fragment } from 'react';
-
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import Divider from '@material-ui/core/Divider';
-import Paper from '@material-ui/core/Paper';
-import Grid from '@material-ui/core/Grid';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { Card, Grid, Text } from '@backstage/ui';
 import { PodAndErrors } from '../types';
 import { FixDialog } from '../FixDialog/FixDialog';
-
-const useStyles = makeStyles((_theme: Theme) =>
-  createStyles({
-    root: {
-      overflow: 'auto',
-    },
-    list: {
-      width: '100%',
-    },
-  }),
-);
+import styles from './ErrorList.module.css';
 
 /**
  * Props for ErrorList
@@ -51,43 +33,42 @@ export interface ErrorListProps {
  * @public
  */
 export const ErrorList = ({ podAndErrors }: ErrorListProps) => {
-  const classes = useStyles();
   return (
-    <Paper className={classes.root}>
-      <List className={classes.list}>
+    <Card>
+      <ul className={styles.list}>
         {podAndErrors
           .filter(pae => pae.errors.length > 0)
           .flatMap(onlyPodWithErrors => {
             return onlyPodWithErrors.errors.map((error, i) => {
               return (
-                <Fragment
+                <li
                   key={`${
                     onlyPodWithErrors.pod.metadata?.name ?? 'unknown'
                   }-eli-${i}`}
+                  className={styles.item}
                 >
-                  {i > 0 && <Divider key={`error-divider${i}`} />}
-                  <ListItem>
-                    <Grid container>
-                      <Grid item xs={9}>
-                        <ListItemText
-                          primary={error.message}
-                          secondary={onlyPodWithErrors.pod.metadata?.name}
-                        />
-                      </Grid>
-                      <Grid item xs={3}>
-                        <FixDialog
-                          pod={onlyPodWithErrors.pod}
-                          error={error}
-                          clusterName={onlyPodWithErrors.cluster.name}
-                        />
-                      </Grid>
-                    </Grid>
-                  </ListItem>
-                </Fragment>
+                  <Grid.Root columns="12" gap="0">
+                    <Grid.Item colSpan="9">
+                      <Text as="p" variant="body-large">
+                        {error.message}
+                      </Text>
+                      <Text as="p" variant="body-medium" color="secondary">
+                        {onlyPodWithErrors.pod.metadata?.name}
+                      </Text>
+                    </Grid.Item>
+                    <Grid.Item colSpan="3">
+                      <FixDialog
+                        pod={onlyPodWithErrors.pod}
+                        error={error}
+                        clusterName={onlyPodWithErrors.cluster.name}
+                      />
+                    </Grid.Item>
+                  </Grid.Root>
+                </li>
               );
             });
           })}
-      </List>
-    </Paper>
+      </ul>
+    </Card>
   );
 };

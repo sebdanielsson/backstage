@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 import { CodeSnippet } from '@backstage/core-components';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Switch from '@material-ui/core/Switch';
+import { Switch } from '@backstage/ui';
 import * as jsyaml from 'js-yaml';
 import { useState } from 'react';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
@@ -61,16 +60,10 @@ export const ManifestYaml = ({ object }: ManifestYamlProps) => {
   const [managedFields, setManagedFields] = useState<boolean>(false);
   return (
     <>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={managedFields}
-            onChange={event => {
-              setManagedFields(event.target.checked);
-            }}
-            name={t('kubernetesDrawer.managedFields')}
-          />
-        }
+      <Switch
+        isSelected={managedFields}
+        onChange={setManagedFields}
+        name={t('kubernetesDrawer.managedFields')}
         label={t('kubernetesDrawer.managedFields')}
       />
       <CodeSnippet

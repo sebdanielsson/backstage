@@ -15,17 +15,12 @@
  */
 
 import { ReactNode, useContext } from 'react';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import type {
   V1Pod,
   V2HorizontalPodAutoscaler,
   V1StatefulSet,
 } from '@kubernetes/client-node';
+import { Flex, Grid, Text } from '@backstage/ui';
 import { PodsTable } from '../Pods';
 import { StatefulSetDrawer } from './StatefulSetDrawer';
 import { HorizontalPodAutoscalerDrawer } from '../HorizontalPodAutoscalers';
@@ -38,6 +33,7 @@ import { StatusError, StatusOK } from '@backstage/core-components';
 import { READY_COLUMNS, RESOURCE_COLUMNS } from '../Pods/PodsTable';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
+import { ResourceAccordion } from '../ResourceAccordion';
 
 type StatefulSetsAccordionsProps = {
   children?: ReactNode;
@@ -60,10 +56,8 @@ type StatefulSetSummaryProps = {
 
 const StatefulSetSummary = ({
   statefulset,
-  numberOfCurrentPods,
-  numberOfPodsWithErrors,
   hpa,
-}: StatefulSetSummaryProps) => {
+}: Pick<StatefulSetSummaryProps, 'statefulset' | 'hpa'>) => {
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
   const specCpuUtil = hpa?.spec?.metrics?.find(
     metric => metric.type === 'Resource' && metric.resource?.name === 'cpu',
@@ -74,70 +68,51 @@ const StatefulSetSummary = ({
   )?.resource?.current.averageUtilization;
 
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      spacing={0}
-    >
-      <Grid xs={6} item>
+    <Grid.Root columns="2" gap="4" grow>
+      <Grid.Item>
         <StatefulSetDrawer statefulset={statefulset} />
-      </Grid>
+      </Grid.Item>
       {hpa && (
-        <Grid item xs={3}>
+        <Grid.Item>
           <HorizontalPodAutoscalerDrawer hpa={hpa}>
-            <Grid
-              item
-              container
-              direction="column"
-              justifyContent="flex-start"
-              alignItems="flex-start"
-              spacing={0}
-            >
-              <Grid item>
-                <Typography variant="subtitle2">
-                  {t('hpa.minReplicas')} {hpa.spec?.minReplicas ?? '?'} /{' '}
-                  {t('hpa.maxReplicas')} {hpa.spec?.maxReplicas ?? '?'}
-                </Typography>
-              </Grid>
-              <Grid item>
-                <Typography variant="subtitle2">
-                  {t('hpa.currentCpuUsage')} {cpuUtil ?? '?'}%
-                </Typography>
-              </Grid>
-              <Grid item>
-                <Typography variant="subtitle2">
-                  {t('hpa.targetCpuUsage')} {specCpuUtil ?? '?'}%
-                </Typography>
-              </Grid>
-            </Grid>
+            <Flex direction="column" align="start" gap="0">
+              <Text variant="body-medium" weight="bold">
+                {t('hpa.minReplicas')} {hpa.spec?.minReplicas ?? '?'} /{' '}
+                {t('hpa.maxReplicas')} {hpa.spec?.maxReplicas ?? '?'}
+              </Text>
+              <Text variant="body-medium" weight="bold">
+                {t('hpa.currentCpuUsage')} {cpuUtil ?? '?'}%
+              </Text>
+              <Text variant="body-medium" weight="bold">
+                {t('hpa.targetCpuUsage')} {specCpuUtil ?? '?'}%
+              </Text>
+            </Flex>
           </HorizontalPodAutoscalerDrawer>
-        </Grid>
+        </Grid.Item>
       )}
-      <Grid
-        item
-        container
-        xs={3}
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item>
-          <StatusOK>{t('pods.pods', { count: numberOfCurrentPods })}</StatusOK>
-        </Grid>
-        <Grid item>
-          {numberOfPodsWithErrors > 0 ? (
-            <StatusError>
-              {t('cluster.podsWithErrors', { count: numberOfPodsWithErrors })}
-            </StatusError>
-          ) : (
-            <StatusOK>{t('cluster.noPodsWithErrors')}</StatusOK>
-          )}
-        </Grid>
-      </Grid>
-    </Grid>
+    </Grid.Root>
+  );
+};
+
+const StatefulSetStatus = ({
+  numberOfCurrentPods,
+  numberOfPodsWithErrors,
+}: Pick<
+  StatefulSetSummaryProps,
+  'numberOfCurrentPods' | 'numberOfPodsWithErrors'
+>) => {
+  const { t } = useTranslationRef(kubernetesReactTranslationRef);
+  return (
+    <>
+      <StatusOK>{t('pods.pods', { count: numberOfCurrentPods })}</StatusOK>
+      {numberOfPodsWithErrors > 0 ? (
+        <StatusError>
+          {t('cluster.podsWithErrors', { count: numberOfPodsWithErrors })}
+        </StatusError>
+      ) : (
+        <StatusOK>{t('cluster.noPodsWithErrors')}</StatusOK>
+      )}
+    </>
   );
 };
 
@@ -153,22 +128,21 @@ const StatefulSetAccordion = ({
   );
 
   return (
-    <Accordion TransitionProps={{ unmountOnExit: true }} variant="outlined">
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <StatefulSetSummary
-          statefulset={statefulset}
+    <ResourceAccordion
+      label={statefulset.metadata?.name ?? 'unknown object'}
+      start={<StatefulSetSummary statefulset={statefulset} hpa={matchingHpa} />}
+      status={
+        <StatefulSetStatus
           numberOfCurrentPods={ownedPods.length}
           numberOfPodsWithErrors={podsWithErrors.length}
-          hpa={matchingHpa}
         />
-      </AccordionSummary>
-      <AccordionDetails>
-        <PodsTable
-          pods={ownedPods}
-          extraColumns={[READY_COLUMNS, RESOURCE_COLUMNS]}
-        />
-      </AccordionDetails>
-    </Accordion>
+      }
+    >
+      <PodsTable
+        pods={ownedPods}
+        extraColumns={[READY_COLUMNS, RESOURCE_COLUMNS]}
+      />
+    </ResourceAccordion>
   );
 };
 
@@ -176,30 +150,22 @@ export const StatefulSetsAccordions = ({}: StatefulSetsAccordionsProps) => {
   const groupedResponses = useContext(GroupedResponsesContext);
 
   return (
-    <Grid
-      container
-      direction="column"
-      justifyContent="flex-start"
-      alignItems="flex-start"
-    >
+    <Flex direction="column" gap="4">
       {groupedResponses.statefulsets.map((statefulset, i) => (
-        <Grid container item key={i} xs>
-          <Grid item xs>
-            <StatefulSetAccordion
-              matchingHpa={getMatchingHpa(
-                {
-                  name: statefulset.metadata?.name,
-                  namespace: statefulset.metadata?.namespace,
-                  kind: 'statefulset',
-                },
-                groupedResponses.horizontalPodAutoscalers,
-              )}
-              ownedPods={getOwnedResources(statefulset, groupedResponses.pods)}
-              statefulset={statefulset}
-            />
-          </Grid>
-        </Grid>
+        <StatefulSetAccordion
+          key={i}
+          matchingHpa={getMatchingHpa(
+            {
+              name: statefulset.metadata?.name,
+              namespace: statefulset.metadata?.namespace,
+              kind: 'statefulset',
+            },
+            groupedResponses.horizontalPodAutoscalers,
+          )}
+          ownedPods={getOwnedResources(statefulset, groupedResponses.pods)}
+          statefulset={statefulset}
+        />
       ))}
-    </Grid>
+    </Flex>
   );
 };

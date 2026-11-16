@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Badge, Flex, Text } from '@backstage/ui';
 import { KubernetesStructuredMetadataTableDrawer } from '../KubernetesDrawer';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
-import Chip from '@material-ui/core/Chip';
 import type { V1ConfigMap } from '@kubernetes/client-node';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
@@ -39,32 +37,19 @@ export const ConfigmapsDrawer = ({
         return configmapObject || {};
       }}
     >
-      <Grid
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item>
-          <Typography variant="body1">
-            {configmap.metadata?.name ?? 'unknown object'}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="textSecondary" variant="subtitle1">
-            ConfigMap
-          </Typography>
-        </Grid>
+      <Flex direction="column" align="start" gap="0">
+        <Text variant="body-large">
+          {configmap.metadata?.name ?? 'unknown object'}
+        </Text>
+        <Text variant="body-large" color="secondary">
+          ConfigMap
+        </Text>
         {namespace && (
-          <Grid item>
-            <Chip
-              size="small"
-              label={t('namespace.labelWithValue', { namespace })}
-            />
-          </Grid>
+          <Badge size="medium">
+            {t('namespace.labelWithValue', { namespace })}
+          </Badge>
         )}
-      </Grid>
+      </Flex>
     </KubernetesStructuredMetadataTableDrawer>
   );
 };

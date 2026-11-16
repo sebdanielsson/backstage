@@ -14,11 +14,9 @@
  * limitations under the License.
  */
 
+import { Badge, Flex, Text } from '@backstage/ui';
 import type { V1Service } from '@kubernetes/client-node';
 import { KubernetesStructuredMetadataTableDrawer } from '../KubernetesDrawer';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
-import Chip from '@material-ui/core/Chip';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
 
@@ -40,29 +38,17 @@ export const ServiceDrawer = ({
         return serviceObject.spec || {};
       }}
     >
-      <Grid
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item>
-          <Typography variant="body1">
-            {service.metadata?.name ?? 'unknown object'}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="textSecondary" variant="subtitle1">
-            Service
-          </Typography>
-        </Grid>
+      <Flex direction="column" align="start" gap="0">
+        <Text variant="body-large">
+          {service.metadata?.name ?? 'unknown object'}
+        </Text>
+        <Text variant="body-large" color="secondary">
+          Service
+        </Text>
         {namespace && (
-          <Grid item>
-            <Chip size="small" label={`${t('namespace.label')} ${namespace}`} />
-          </Grid>
+          <Badge size="medium">{`${t('namespace.label')} ${namespace}`}</Badge>
         )}
-      </Grid>
+      </Flex>
     </KubernetesStructuredMetadataTableDrawer>
   );
 };

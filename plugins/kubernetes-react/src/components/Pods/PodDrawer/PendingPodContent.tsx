@@ -13,10 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Grid from '@material-ui/core/Grid';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import Typography from '@material-ui/core/Typography';
+import { Text } from '@backstage/ui';
 import { IPodCondition, Pod } from 'kubernetes-models/v1';
 import {
   StatusError,
@@ -24,6 +21,7 @@ import {
   StatusWarning,
 } from '@backstage/core-components';
 import { DateTime } from 'luxon';
+import styles from './PendingPodContent.module.css';
 
 interface PodConditionProps {
   condition: IPodCondition;
@@ -90,17 +88,17 @@ export const PendingPodContent = ({ pod }: PendingPodContentProps) => {
     pod.status?.conditions?.find(c => c.type === 'Ready'),
   ].filter((c): c is IPodCondition => !!c); // filter out undefined
   return (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <Typography variant="h5">Pod is Pending. Conditions:</Typography>
-        <List>
-          {startupConditions.map(c => (
-            <ListItem key={c.type}>
-              <PodCondition condition={c} />
-            </ListItem>
-          ))}
-        </List>
-      </Grid>
-    </Grid>
+    <div>
+      <Text as="h5" variant="title-small" weight="bold">
+        Pod is Pending. Conditions:
+      </Text>
+      <ul className={styles.list}>
+        {startupConditions.map(c => (
+          <li key={c.type} className={styles.item}>
+            <PodCondition condition={c} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };

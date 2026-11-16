@@ -14,27 +14,20 @@
  * limitations under the License.
  */
 
-import Button from '@material-ui/core/Button';
 import Dialog from '@material-ui/core/Dialog';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import IconButton from '@material-ui/core/IconButton';
-import { Theme, createStyles, makeStyles } from '@material-ui/core/styles';
-import CloseIcon from '@material-ui/icons/Close';
-import { ReactNode, useState } from 'react';
+import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { Button, ButtonIcon, Flex, Text } from '@backstage/ui';
+import { RiCloseLine } from '@remixicon/react';
+import { isValidElement, ReactNode, useState } from 'react';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
 
-const useStyles = makeStyles((theme: Theme) =>
+const useStyles = makeStyles(() =>
   createStyles({
     dialogPaper: { minHeight: 'calc(100% - 64px)' },
     dialogContent: { flexBasis: 0 },
-    closeButton: {
-      position: 'absolute',
-      right: theme.spacing(1),
-      top: theme.spacing(1),
-      color: theme.palette.grey[500],
-    },
   }),
 );
 
@@ -80,27 +73,31 @@ export const KubernetesDialog = ({
         onClose={closeDialog}
         PaperProps={{ className: classes.dialogPaper }}
       >
-        <DialogTitle id="dialog-title">
-          {title}
-          <IconButton
-            aria-label={t('kubernetesDialog.closeAriaLabel')}
-            className={classes.closeButton}
-            onClick={closeDialog}
-          >
-            <CloseIcon />
-          </IconButton>
+        <DialogTitle id="dialog-title" disableTypography>
+          <Flex justify="between" align="center">
+            <Text as="h2" variant="title-x-small" weight="bold">
+              {title}
+            </Text>
+            <ButtonIcon
+              variant="tertiary"
+              size="medium"
+              aria-label={t('kubernetesDialog.closeAriaLabel')}
+              onPress={closeDialog}
+              icon={<RiCloseLine size={20} />}
+            />
+          </Flex>
         </DialogTitle>
         <DialogContent className={classes.dialogContent}>
           {children}
         </DialogContent>
       </Dialog>
       <Button
-        variant="outlined"
+        variant="secondary"
+        size="medium"
         aria-label={buttonAriaLabel}
-        component="label"
-        disabled={disabled}
-        onClick={openDialog}
-        startIcon={buttonIcon}
+        isDisabled={disabled}
+        onPress={openDialog}
+        iconStart={isValidElement(buttonIcon) ? buttonIcon : undefined}
       >
         {buttonText}
       </Button>

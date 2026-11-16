@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import OpenInBrowserIcon from '@material-ui/icons/OpenInBrowser';
+import { RiTerminalBoxLine } from '@remixicon/react';
 
 import { KubernetesDialog } from '../KubernetesDialog';
 import { useIsPodExecTerminalSupported } from '../../hooks';
@@ -37,7 +37,7 @@ export const PodExecTerminalDialog = (props: PodExecTerminalProps) => {
     isPodExecTerminalSupported.value && (
       <KubernetesDialog
         buttonAriaLabel={t('podExecTerminal.buttonAriaLabel')}
-        buttonIcon={<OpenInBrowserIcon />}
+        buttonIcon={<RiTerminalBoxLine size={20} />}
         buttonText={t('podExecTerminal.buttonText')}
         disabled={
           isPodExecTerminalSupported.loading ||

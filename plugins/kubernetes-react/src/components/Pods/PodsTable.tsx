@@ -29,7 +29,7 @@ import { useMatchingErrors } from '../../hooks/useMatchingErrors';
 import { Pod } from 'kubernetes-models/v1/Pod';
 import type { V1Pod } from '@kubernetes/client-node';
 import { usePodMetrics } from '../../hooks/usePodMetrics';
-import Typography from '@material-ui/core/Typography';
+import { Text } from '@backstage/ui';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
 
@@ -87,7 +87,11 @@ const Cpu = ({ clusterName, pod }: { clusterName: string; pod: Pod }) => {
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
 
   if (!metrics) {
-    return <Typography>{t('podsTable.unknown')}</Typography>;
+    return (
+      <Text as="p" variant="body-large">
+        {t('podsTable.unknown')}
+      </Text>
+    );
   }
 
   return <>{podStatusToCpuUtil(metrics)}</>;
@@ -98,7 +102,11 @@ const Memory = ({ clusterName, pod }: { clusterName: string; pod: Pod }) => {
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
 
   if (!metrics) {
-    return <Typography>{t('podsTable.unknown')}</Typography>;
+    return (
+      <Text as="p" variant="body-large">
+        {t('podsTable.unknown')}
+      </Text>
+    );
   }
 
   return <>{podStatusToMemoryUtil(metrics)}</>;

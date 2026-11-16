@@ -15,7 +15,7 @@
  */
 
 import { ReactNode } from 'react';
-import Typography from '@material-ui/core/Typography';
+import { Text } from '@backstage/ui';
 import { ClusterObjects } from '@backstage/plugin-kubernetes-common';
 import { WarningPanel } from '@backstage/core-components';
 import {
@@ -31,14 +31,14 @@ const clustersWithErrorsToErrorMessage = (
   return clustersWithErrors.map((c, i) => {
     return (
       <div key={i}>
-        <Typography variant="body2">
+        <Text as="p" variant="body-medium">
           {t('errorPanel.clusterLabelValue', {
             cluster: c.cluster.title || c.cluster.name,
           })}
-        </Typography>
+        </Text>
         {c.errors.map((e, j) => {
           return (
-            <Typography variant="body2" key={j}>
+            <Text as="p" variant="body-medium" key={j}>
               {e.errorType === 'FETCH_ERROR'
                 ? t('errorPanel.fetchError', {
                     errorType: e.errorType,
@@ -49,7 +49,7 @@ const clustersWithErrorsToErrorMessage = (
                     errorType: e.errorType,
                     statusCode: String(e.statusCode ?? ''),
                   })}
-            </Typography>
+            </Text>
           );
         })}
         <br />
@@ -93,9 +93,9 @@ export const ErrorPanel = ({
         </div>
       )}
       {errorMessage && (
-        <Typography variant="body2">
+        <Text as="p" variant="body-medium">
           {t('errorPanel.errorsLabel')}: {errorMessage}
-        </Typography>
+        </Text>
       )}
     </WarningPanel>
   );

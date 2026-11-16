@@ -15,18 +15,12 @@
  */
 
 import { ReactNode, useContext } from 'react';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import type { V1Pod, V2HorizontalPodAutoscaler } from '@kubernetes/client-node';
+import { Box, Flex, Grid, Text } from '@backstage/ui';
+import { RiErrorWarningLine, RiPauseLine } from '@remixicon/react';
 import { PodsTable } from '../../Pods';
 import { HorizontalPodAutoscalerDrawer } from '../../HorizontalPodAutoscalers';
 import { RolloutDrawer } from './RolloutDrawer';
-import PauseIcon from '@material-ui/icons/Pause';
-import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 import { DateTime } from 'luxon';
 import { StepsProgress } from './StepsProgress';
 import {
@@ -41,6 +35,7 @@ import { StatusError, StatusOK } from '@backstage/core-components';
 import { READY_COLUMNS, RESOURCE_COLUMNS } from '../../Pods/PodsTable';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../../translation';
+import { ResourceAccordion } from '../../ResourceAccordion';
 
 type RolloutAccordionsProps = {
   rollouts: any[];
@@ -65,16 +60,10 @@ type RolloutSummaryProps = {
 };
 
 const AbortedTitle = (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      flexWrap: 'wrap',
-    }}
-  >
-    <ErrorOutlineIcon />
-    <Typography variant="subtitle1">Aborted</Typography>
-  </div>
+  <Flex align="center" gap="1">
+    <RiErrorWarningLine size={24} aria-hidden />
+    <Text variant="body-large">Aborted</Text>
+  </Flex>
 );
 
 const findAbortedMessage = (rollout: any): string | undefined =>
@@ -87,15 +76,9 @@ const findAbortedMessage = (rollout: any): string | undefined =>
 
 const RolloutSummary = ({
   rollout,
-  numberOfCurrentPods,
-  numberOfPodsWithErrors,
   hpa,
-}: RolloutSummaryProps) => {
+}: Pick<RolloutSummaryProps, 'rollout' | 'hpa'>) => {
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
-  const pauseTime: string | undefined = rollout.status?.pauseConditions?.find(
-    (p: any) => p.reason === 'CanaryPauseStep',
-  )?.startTime;
-  const abortedMessage = findAbortedMessage(rollout);
   const specCpuUtil = hpa?.spec?.metrics?.find(
     metric => metric.type === 'Resource' && metric.resource?.name === 'cpu',
   )?.resource?.target.averageUtilization;
@@ -105,98 +88,69 @@ const RolloutSummary = ({
   )?.resource?.current.averageUtilization;
 
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      spacing={0}
-    >
-      <Grid xs={6} item>
+    <Grid.Root columns="2" gap="4" grow>
+      <Grid.Item>
         <RolloutDrawer rollout={rollout} />
-      </Grid>
+      </Grid.Item>
       {hpa && (
-        <Grid item xs={3}>
+        <Grid.Item>
           <HorizontalPodAutoscalerDrawer hpa={hpa}>
-            <Grid
-              item
-              container
-              direction="column"
-              justifyContent="flex-start"
-              alignItems="flex-start"
-              spacing={0}
-            >
-              <Grid item>
-                <Typography variant="subtitle2">
-                  {t('hpa.replicasSummary', {
-                    min: String(hpa.spec?.minReplicas ?? '?'),
-                    max: String(hpa.spec?.maxReplicas ?? '?'),
-                  })}
-                </Typography>
-              </Grid>
-              <Grid item>
-                <Typography variant="subtitle2">
-                  {t('hpa.currentCpuUsageLabel', {
-                    value: String(cpuUtil ?? '?'),
-                  })}
-                </Typography>
-              </Grid>
-              <Grid item>
-                <Typography variant="subtitle2">
-                  {t('hpa.targetCpuUsageLabel', {
-                    value: String(specCpuUtil ?? '?'),
-                  })}
-                </Typography>
-              </Grid>
-            </Grid>
+            <Flex direction="column" align="start" gap="0">
+              <Text variant="body-medium" weight="bold">
+                {t('hpa.replicasSummary', {
+                  min: String(hpa.spec?.minReplicas ?? '?'),
+                  max: String(hpa.spec?.maxReplicas ?? '?'),
+                })}
+              </Text>
+              <Text variant="body-medium" weight="bold">
+                {t('hpa.currentCpuUsageLabel', {
+                  value: String(cpuUtil ?? '?'),
+                })}
+              </Text>
+              <Text variant="body-medium" weight="bold">
+                {t('hpa.targetCpuUsageLabel', {
+                  value: String(specCpuUtil ?? '?'),
+                })}
+              </Text>
+            </Flex>
           </HorizontalPodAutoscalerDrawer>
-        </Grid>
+        </Grid.Item>
       )}
-      <Grid
-        item
-        container
-        xs={3}
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-end"
-        spacing={0}
-      >
-        <Grid item>
-          <StatusOK>{t('pods.pods', { count: numberOfCurrentPods })}</StatusOK>
-        </Grid>
-        <Grid item>
-          {numberOfPodsWithErrors > 0 ? (
-            <StatusError>
-              {t('cluster.podsWithErrors', { count: numberOfPodsWithErrors })}
-            </StatusError>
-          ) : (
-            <StatusOK>{t('cluster.noPodsWithErrors')}</StatusOK>
-          )}
-        </Grid>
-      </Grid>
+    </Grid.Root>
+  );
+};
+
+const RolloutStatus = ({
+  rollout,
+  numberOfCurrentPods,
+  numberOfPodsWithErrors,
+}: RolloutSummaryProps) => {
+  const { t } = useTranslationRef(kubernetesReactTranslationRef);
+  const pauseTime: string | undefined = rollout.status?.pauseConditions?.find(
+    (p: any) => p.reason === 'CanaryPauseStep',
+  )?.startTime;
+  const abortedMessage = findAbortedMessage(rollout);
+
+  return (
+    <>
+      <StatusOK>{t('pods.pods', { count: numberOfCurrentPods })}</StatusOK>
+      {numberOfPodsWithErrors > 0 ? (
+        <StatusError>
+          {t('cluster.podsWithErrors', { count: numberOfPodsWithErrors })}
+        </StatusError>
+      ) : (
+        <StatusOK>{t('cluster.noPodsWithErrors')}</StatusOK>
+      )}
       {pauseTime && (
-        <Grid item xs={3}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <PauseIcon />
-            <Typography variant="subtitle1">
-              Paused ({DateTime.fromISO(pauseTime).toRelative({ locale: 'en' })}
-              )
-            </Typography>
-          </div>
-        </Grid>
+        <Flex align="center" gap="1">
+          <RiPauseLine size={24} aria-hidden />
+          <Text variant="body-large">
+            Paused ({DateTime.fromISO(pauseTime).toRelative({ locale: 'en' })})
+          </Text>
+        </Flex>
       )}
-      {abortedMessage && (
-        <Grid item xs={3}>
-          {AbortedTitle}
-        </Grid>
-      )}
-    </Grid>
+      {abortedMessage && AbortedTitle}
+    </>
   );
 };
 
@@ -216,46 +170,43 @@ const RolloutAccordion = ({
   const abortedMessage = findAbortedMessage(rollout);
 
   return (
-    <Accordion
+    <ResourceAccordion
+      label={rollout.metadata?.name ?? 'unknown object'}
       defaultExpanded={defaultExpanded}
-      TransitionProps={{ unmountOnExit: true }}
-      variant="outlined"
-    >
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <RolloutSummary
+      start={<RolloutSummary rollout={rollout} hpa={matchingHpa} />}
+      status={
+        <RolloutStatus
           rollout={rollout}
           numberOfCurrentPods={ownedPods.length}
           numberOfPodsWithErrors={podsWithErrors.length}
-          hpa={matchingHpa}
         />
-      </AccordionSummary>
-      <AccordionDetails>
-        <div style={{ width: '100%' }}>
-          <div>
-            <Typography variant="h6">Rollout status</Typography>
-          </div>
-          <div style={{ margin: '1rem' }}>
-            {abortedMessage && (
-              <>
-                {AbortedTitle}
-                <Typography variant="subtitle2">{abortedMessage}</Typography>
-              </>
-            )}
-            <StepsProgress
-              aborted={abortedMessage !== undefined}
-              steps={rollout.spec?.strategy?.canary?.steps ?? []}
-              currentStepIndex={currentStepIndex}
-            />
-          </div>
-          <div>
-            <PodsTable
-              pods={ownedPods}
-              extraColumns={[READY_COLUMNS, RESOURCE_COLUMNS]}
-            />
-          </div>
-        </div>
-      </AccordionDetails>
-    </Accordion>
+      }
+    >
+      <Flex direction="column" gap="0">
+        <Text as="h6" variant="title-x-small" weight="bold">
+          Rollout status
+        </Text>
+        <Box m="4">
+          {abortedMessage && (
+            <>
+              {AbortedTitle}
+              <Text variant="body-medium" weight="bold">
+                {abortedMessage}
+              </Text>
+            </>
+          )}
+          <StepsProgress
+            aborted={abortedMessage !== undefined}
+            steps={rollout.spec?.strategy?.canary?.steps ?? []}
+            currentStepIndex={currentStepIndex}
+          />
+        </Box>
+        <PodsTable
+          pods={ownedPods}
+          extraColumns={[READY_COLUMNS, RESOURCE_COLUMNS]}
+        />
+      </Flex>
+    </ResourceAccordion>
   );
 };
 
@@ -266,35 +217,27 @@ export const RolloutAccordions = ({
   const groupedResponses = useContext(GroupedResponsesContext);
 
   return (
-    <Grid
-      container
-      direction="column"
-      justifyContent="flex-start"
-      alignItems="flex-start"
-    >
+    <Flex direction="column" gap="4">
       {rollouts.map((rollout, i) => (
-        <Grid container item key={i} xs>
-          <Grid item xs>
-            <RolloutAccordion
-              defaultExpanded={defaultExpanded}
-              matchingHpa={getMatchingHpa(
-                {
-                  name: rollout.metadata?.name,
-                  namespace: rollout.metadata?.namespace,
-                  kind: 'rollout',
-                },
-                groupedResponses.horizontalPodAutoscalers,
-              )}
-              ownedPods={getOwnedPodsThroughReplicaSets(
-                rollout,
-                groupedResponses.replicaSets,
-                groupedResponses.pods,
-              )}
-              rollout={rollout}
-            />
-          </Grid>
-        </Grid>
+        <RolloutAccordion
+          key={i}
+          defaultExpanded={defaultExpanded}
+          matchingHpa={getMatchingHpa(
+            {
+              name: rollout.metadata?.name,
+              namespace: rollout.metadata?.namespace,
+              kind: 'rollout',
+            },
+            groupedResponses.horizontalPodAutoscalers,
+          )}
+          ownedPods={getOwnedPodsThroughReplicaSets(
+            rollout,
+            groupedResponses.replicaSets,
+            groupedResponses.pods,
+          )}
+          rollout={rollout}
+        />
       ))}
-    </Grid>
+    </Flex>
   );
 };

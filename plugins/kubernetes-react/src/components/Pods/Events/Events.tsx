@@ -13,26 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Avatar from '@material-ui/core/Avatar';
-import Container from '@material-ui/core/Container';
-import Grid from '@material-ui/core/Grid';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemAvatar from '@material-ui/core/ListItemAvatar';
-import ListItemText from '@material-ui/core/ListItemText';
-import Tooltip from '@material-ui/core/Tooltip';
-import Typography from '@material-ui/core/Typography';
-
-import InfoIcon from '@material-ui/icons/Info';
-import WarningIcon from '@material-ui/icons/Warning';
+import { Container, Skeleton, Text } from '@backstage/ui';
+import { RiAlertFill, RiInformationFill } from '@remixicon/react';
 import { DateTime } from 'luxon';
 
 import { useEvents } from './useEvents';
-import Skeleton from '@material-ui/lab/Skeleton';
 import { DismissableBanner } from '@backstage/core-components';
 import { Event } from 'kubernetes-models/v1';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../../translation';
+import styles from './Events.module.css';
 
 /**
  * Props for Events
@@ -45,10 +35,15 @@ export interface EventsContentProps {
 }
 
 const getAvatarByType = (type?: string) => {
+  const label = `${type ?? ''} event`;
   return (
-    <ListItemAvatar>
-      <Avatar>{type === 'Warning' ? <WarningIcon /> : <InfoIcon />}</Avatar>
-    </ListItemAvatar>
+    <div className={styles.avatar} role="img" aria-label={label} title={label}>
+      {type === 'Warning' ? (
+        <RiAlertFill size={24} aria-hidden />
+      ) : (
+        <RiInformationFill size={24} aria-hidden />
+      )}
+    </div>
   );
 };
 
@@ -63,42 +58,47 @@ export const EventsContent = ({
 }: EventsContentProps) => {
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
   if (events.length === 0) {
-    return <Typography>{t('events.noEventsFound')}</Typography>;
+    return (
+      <Text as="p" variant="body-large">
+        {t('events.noEventsFound')}
+      </Text>
+    );
   }
 
   return (
     <Container>
-      <Grid>
-        <List>
-          {events
-            .filter(event => {
-              if (warningEventsOnly) {
-                return event.type === 'Warning';
-              }
-              return true;
-            })
-            .map((event, index) => {
-              const timeAgo = event.metadata.creationTimestamp
-                ? DateTime.fromISO(event.metadata.creationTimestamp).toRelative(
-                    {
-                      locale: 'en',
-                    },
-                  )
-                : 'unknown';
-              return (
-                <ListItem key={`${event.metadata.name}-${index}`}>
-                  <Tooltip title={`${event.type ?? ''} event`}>
-                    {getAvatarByType(event.type)}
-                  </Tooltip>
-                  <ListItemText
-                    primary={`First event ${timeAgo} (count: ${event.count})`}
-                    secondary={`${event.reason}: ${event.message}`}
-                  />
-                </ListItem>
-              );
-            })}
-        </List>
-      </Grid>
+      <ul className={styles.list}>
+        {events
+          .filter(event => {
+            if (warningEventsOnly) {
+              return event.type === 'Warning';
+            }
+            return true;
+          })
+          .map((event, index) => {
+            const timeAgo = event.metadata.creationTimestamp
+              ? DateTime.fromISO(event.metadata.creationTimestamp).toRelative({
+                  locale: 'en',
+                })
+              : 'unknown';
+            return (
+              <li
+                key={`${event.metadata.name}-${index}`}
+                className={styles.item}
+              >
+                {getAvatarByType(event.type)}
+                <div>
+                  <Text as="p" variant="body-large">
+                    {`First event ${timeAgo} (count: ${event.count})`}
+                  </Text>
+                  <Text as="p" variant="body-medium" color="secondary">
+                    {`${event.reason}: ${event.message}`}
+                  </Text>
+                </div>
+              </li>
+            );
+          })}
+      </ul>
     </Container>
   );
 };
@@ -144,7 +144,7 @@ export const Events = ({
           id="events"
         />
       )}
-      {loading && <Skeleton variant="rect" width="100%" height="100%" />}
+      {loading && <Skeleton width="100%" height="100%" />}
       {!loading && value !== undefined && (
         <EventsContent warningEventsOnly={warningEventsOnly} events={value} />
       )}

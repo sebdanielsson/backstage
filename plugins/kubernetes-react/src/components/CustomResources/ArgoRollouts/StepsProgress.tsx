@@ -18,7 +18,7 @@ import { ReactNode } from 'react';
 import Step from '@material-ui/core/Step';
 import StepLabel from '@material-ui/core/StepLabel';
 import Stepper from '@material-ui/core/Stepper';
-import Typography from '@material-ui/core/Typography';
+import { Flex, Text } from '@backstage/ui';
 import {
   ArgoRolloutCanaryStep,
   SetWeightStep,
@@ -51,14 +51,16 @@ const createLabelForStep = (step: ArgoRolloutCanaryStep): ReactNode => {
       : `pause for ${step.pause.duration}`;
   } else if (isAnalysisStep(step)) {
     return (
-      <div>
-        <Typography paragraph>analysis templates:</Typography>
+      <Flex direction="column" gap="4">
+        <Text as="p" variant="body-large">
+          analysis templates:
+        </Text>
         {step.analysis.templates.map((t, i) => (
-          <Typography paragraph key={i}>{`${t.templateName}${
+          <Text as="p" variant="body-large" key={i}>{`${t.templateName}${
             t.clusterScope ? ' (cluster scoped)' : ''
-          }`}</Typography>
+          }`}</Text>
         ))}
-      </div>
+      </Flex>
     );
   }
   return 'unknown step';

@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
+import { Flex } from '@backstage/ui';
+import { ResourceAccordion } from '../ResourceAccordion';
 import { useContext } from 'react';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import Grid from '@material-ui/core/Grid';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import type { V1Ingress } from '@kubernetes/client-node';
 import { IngressDrawer } from './IngressDrawer';
 import { GroupedResponsesContext } from '../../hooks';
@@ -34,25 +31,6 @@ export type IngressesAccordionsProps = {};
 
 type IngressAccordionProps = {
   ingress: V1Ingress;
-};
-
-type IngressSummaryProps = {
-  ingress: V1Ingress;
-};
-
-const IngressSummary = ({ ingress }: IngressSummaryProps) => {
-  return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="flex-start"
-      alignItems="center"
-    >
-      <Grid xs={12} item>
-        <IngressDrawer ingress={ingress} />
-      </Grid>
-    </Grid>
-  );
 };
 
 type IngressCardProps = {
@@ -74,14 +52,12 @@ const IngressCard = ({ ingress }: IngressCardProps) => {
 
 const IngressAccordion = ({ ingress }: IngressAccordionProps) => {
   return (
-    <Accordion TransitionProps={{ unmountOnExit: true }}>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <IngressSummary ingress={ingress} />
-      </AccordionSummary>
-      <AccordionDetails>
-        <IngressCard ingress={ingress} />
-      </AccordionDetails>
-    </Accordion>
+    <ResourceAccordion
+      label={ingress.metadata?.name ?? 'unknown object'}
+      start={<IngressDrawer ingress={ingress} />}
+    >
+      <IngressCard ingress={ingress} />
+    </ResourceAccordion>
   );
 };
 
@@ -93,17 +69,10 @@ const IngressAccordion = ({ ingress }: IngressAccordionProps) => {
 export const IngressesAccordions = ({}: IngressesAccordionsProps) => {
   const groupedResponses = useContext(GroupedResponsesContext);
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="flex-start"
-      alignItems="flex-start"
-    >
+    <Flex gap="4" align="start">
       {groupedResponses.ingresses.map((ingress, i) => (
-        <Grid item key={i} xs>
-          <IngressAccordion ingress={ingress} />
-        </Grid>
+        <IngressAccordion key={i} ingress={ingress} />
       ))}
-    </Grid>
+    </Flex>
   );
 };

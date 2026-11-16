@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
+import { Flex } from '@backstage/ui';
+import { ResourceAccordion } from '../ResourceAccordion';
 import { ReactNode } from 'react';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import Grid from '@material-ui/core/Grid';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { DefaultCustomResourceDrawer } from './DefaultCustomResourceDrawer';
 import { StructuredMetadataTable } from '@backstage/core-components';
 
@@ -37,60 +34,29 @@ type DefaultCustomResourceAccordionProps = {
   children?: ReactNode;
 };
 
-type DefaultCustomResourceSummaryProps = {
-  customResource: any;
-  customResourceName: string;
-  children?: ReactNode;
-};
-
-const DefaultCustomResourceSummary = ({
-  customResource,
-  customResourceName,
-}: DefaultCustomResourceSummaryProps) => {
-  return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      spacing={0}
-    >
-      <Grid xs={12} item>
-        <DefaultCustomResourceDrawer
-          customResource={customResource}
-          customResourceName={customResourceName}
-        />
-      </Grid>
-    </Grid>
-  );
-};
-
 const DefaultCustomResourceAccordion = ({
   customResource,
   customResourceName,
   defaultExpanded,
 }: DefaultCustomResourceAccordionProps) => {
   return (
-    <Accordion
+    <ResourceAccordion
+      label={customResource.metadata?.name ?? 'unknown object'}
       defaultExpanded={defaultExpanded}
-      TransitionProps={{ unmountOnExit: true }}
-      variant="outlined"
-    >
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <DefaultCustomResourceSummary
+      start={
+        <DefaultCustomResourceDrawer
           customResource={customResource}
           customResourceName={customResourceName}
         />
-      </AccordionSummary>
-      <AccordionDetails>
-        {Object.prototype.hasOwnProperty.call(customResource, 'status') && (
-          <StructuredMetadataTable
-            metadata={customResource.status}
-            options={{ nestedValuesAsYaml: true }}
-          />
-        )}
-      </AccordionDetails>
-    </Accordion>
+      }
+    >
+      {Object.prototype.hasOwnProperty.call(customResource, 'status') && (
+        <StructuredMetadataTable
+          metadata={customResource.status}
+          options={{ nestedValuesAsYaml: true }}
+        />
+      )}
+    </ResourceAccordion>
   );
 };
 
@@ -100,23 +66,15 @@ export const DefaultCustomResourceAccordions = ({
   defaultExpanded = false,
 }: DefaultCustomResourceAccordionsProps) => {
   return (
-    <Grid
-      container
-      direction="column"
-      justifyContent="flex-start"
-      alignItems="flex-start"
-    >
+    <Flex direction="column" gap="4">
       {customResources.map((cr, i) => (
-        <Grid container item key={i} xs>
-          <Grid item xs>
-            <DefaultCustomResourceAccordion
-              defaultExpanded={defaultExpanded}
-              customResource={cr}
-              customResourceName={customResourceName}
-            />
-          </Grid>
-        </Grid>
+        <DefaultCustomResourceAccordion
+          key={i}
+          defaultExpanded={defaultExpanded}
+          customResource={cr}
+          customResourceName={customResourceName}
+        />
       ))}
-    </Grid>
+    </Flex>
   );
 };

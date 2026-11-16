@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
+import { Badge, Flex, Text } from '@backstage/ui';
 import { ReactNode } from 'react';
 import type { V1Deployment } from '@kubernetes/client-node';
 import { KubernetesStructuredMetadataTableDrawer } from '../KubernetesDrawer';
 import { renderCondition } from '../../utils/pod';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
-import Chip from '@material-ui/core/Chip';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
 
@@ -55,32 +53,19 @@ export const DeploymentDrawer = ({
         };
       }}
     >
-      <Grid
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item>
-          <Typography variant="body1">
-            {deployment.metadata?.name ?? 'unknown object'}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="textSecondary" variant="subtitle1">
-            Deployment
-          </Typography>
-        </Grid>
+      <Flex direction="column" align="start" gap="0">
+        <Text variant="body-large">
+          {deployment.metadata?.name ?? 'unknown object'}
+        </Text>
+        <Text variant="body-large" color="secondary">
+          Deployment
+        </Text>
         {namespace && (
-          <Grid item>
-            <Chip
-              size="small"
-              label={t('namespace.labelWithValue', { namespace })}
-            />
-          </Grid>
+          <Badge size="medium">
+            {t('namespace.labelWithValue', { namespace })}
+          </Badge>
         )}
-      </Grid>
+      </Flex>
     </KubernetesStructuredMetadataTableDrawer>
   );
 };

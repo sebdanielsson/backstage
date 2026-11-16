@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import SubjectIcon from '@material-ui/icons/Subject';
+import { RiFileTextLine } from '@remixicon/react';
 
 import { KubernetesDialog } from '../../KubernetesDialog';
 import { PodLogs } from './PodLogs';
@@ -40,7 +40,7 @@ export const PodLogsDialog = ({ containerScope }: PodLogsDialogProps) => {
   return (
     <KubernetesDialog
       buttonAriaLabel={t('podLogs.buttonAriaLabel')}
-      buttonIcon={<SubjectIcon />}
+      buttonIcon={<RiFileTextLine size={20} />}
       buttonText={t('podLogs.buttonText')}
       disabled={false}
       title={t('podLogs.titleTemplate', {

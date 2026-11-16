@@ -15,17 +15,12 @@
  */
 
 import { ReactNode } from 'react';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
+import { Flex, Text } from '@backstage/ui';
 import {
   ClientPodStatus,
   ClusterObjects,
   groupResponses,
 } from '@backstage/plugin-kubernetes-common';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import { DeploymentsAccordions } from '../DeploymentsAccordions';
 import { StatefulSetsAccordions } from '../StatefulSetsAccordions';
 import { IngressesAccordions } from '../IngressesAccordions';
@@ -47,6 +42,7 @@ import { PodMetricsContext } from '../../hooks/usePodMetrics';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
 import { SecretsAccordions } from '../SecretsAccordions';
+import { ResourceAccordion } from '../ResourceAccordion';
 
 type ClusterSummaryProps = {
   clusterName: string;
@@ -55,59 +51,34 @@ type ClusterSummaryProps = {
   children?: ReactNode;
 };
 
-const ClusterSummary = ({
-  clusterName,
-  totalNumberOfPods,
-  numberOfPodsWithErrors,
-}: ClusterSummaryProps) => {
+const ClusterTitle = ({ clusterName }: { clusterName: string }) => {
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="space-between"
-      alignItems="flex-start"
-      spacing={0}
-    >
-      <Grid
-        xs={6}
-        item
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item xs>
-          <Typography variant="body1">{clusterName}</Typography>
-          <Typography color="textSecondary" variant="subtitle1">
-            {t('cluster.label')}
-          </Typography>
-        </Grid>
-      </Grid>
-      <Grid
-        item
-        container
-        xs={3}
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-end"
-        spacing={0}
-      >
-        <Grid item>
-          <StatusOK>{t('cluster.pods', { count: totalNumberOfPods })}</StatusOK>
-        </Grid>
-        <Grid item>
-          {numberOfPodsWithErrors > 0 ? (
-            <StatusError>
-              {t('cluster.podsWithErrors', { count: numberOfPodsWithErrors })}
-            </StatusError>
-          ) : (
-            <StatusOK>{t('cluster.noPodsWithErrors')}</StatusOK>
-          )}
-        </Grid>
-      </Grid>
-    </Grid>
+    <Flex direction="column" align="start" gap="0">
+      <Text variant="body-large">{clusterName}</Text>
+      <Text variant="body-large" color="secondary">
+        {t('cluster.label')}
+      </Text>
+    </Flex>
+  );
+};
+
+const ClusterStatus = ({
+  totalNumberOfPods,
+  numberOfPodsWithErrors,
+}: Omit<ClusterSummaryProps, 'clusterName'>) => {
+  const { t } = useTranslationRef(kubernetesReactTranslationRef);
+  return (
+    <>
+      <StatusOK>{t('cluster.pods', { count: totalNumberOfPods })}</StatusOK>
+      {numberOfPodsWithErrors > 0 ? (
+        <StatusError>
+          {t('cluster.podsWithErrors', { count: numberOfPodsWithErrors })}
+        </StatusError>
+      ) : (
+        <StatusOK>{t('cluster.noPodsWithErrors')}</StatusOK>
+      )}
+    </>
   );
 };
 
@@ -130,6 +101,8 @@ export type ClusterProps = {
 export const Cluster = ({ clusterObjects, podsWithErrors }: ClusterProps) => {
   const groupedResponses = groupResponses(clusterObjects.resources);
 
+  const clusterName =
+    clusterObjects.cluster.title || clusterObjects.cluster.name;
   const podMetricsMap = new Map<string, ClientPodStatus[]>();
   podMetricsMap.set(clusterObjects.cluster.name, clusterObjects.podMetrics);
   return (
@@ -137,76 +110,46 @@ export const Cluster = ({ clusterObjects, podsWithErrors }: ClusterProps) => {
       <GroupedResponsesContext.Provider value={groupedResponses}>
         <PodMetricsContext.Provider value={podMetricsMap}>
           <PodNamesWithErrorsContext.Provider value={podsWithErrors}>
-            <Accordion TransitionProps={{ unmountOnExit: true }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <ClusterSummary
-                  clusterName={
-                    clusterObjects.cluster.title || clusterObjects.cluster.name
-                  }
+            <ResourceAccordion
+              label={clusterName}
+              start={<ClusterTitle clusterName={clusterName} />}
+              status={
+                <ClusterStatus
                   totalNumberOfPods={groupedResponses.pods.length}
                   numberOfPodsWithErrors={podsWithErrors.size}
                 />
-              </AccordionSummary>
-              <AccordionDetails>
-                <Grid container direction="column">
-                  {groupedResponses.customResources.length > 0 ? (
-                    <Grid item>
-                      <CustomResources />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.deployments.length > 0 ? (
-                    <Grid item>
-                      <DeploymentsAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.daemonSets.length > 0 ? (
-                    <Grid item>
-                      <DaemonSetsAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.statefulsets.length > 0 ? (
-                    <Grid item>
-                      <StatefulSetsAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.ingresses.length > 0 ? (
-                    <Grid item>
-                      <IngressesAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.services.length > 0 ? (
-                    <Grid item>
-                      <ServicesAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.configMaps.length > 0 ? (
-                    <Grid item>
-                      <ConfigmapsAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.secrets.length > 0 ? (
-                    <Grid item>
-                      <SecretsAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.persistentVolumes.length > 0 ? (
-                    <Grid item>
-                      <PersistentVolumesAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.persistentVolumeClaims.length > 0 ? (
-                    <Grid item>
-                      <PersistentVolumeClaimsAccordions />
-                    </Grid>
-                  ) : undefined}
-                  {groupedResponses.cronJobs.length > 0 ? (
-                    <Grid item>
-                      <CronJobsAccordions />
-                    </Grid>
-                  ) : undefined}
-                </Grid>
-              </AccordionDetails>
-            </Accordion>
+              }
+            >
+              <Flex direction="column" gap="4">
+                {groupedResponses.customResources.length > 0 && (
+                  <CustomResources />
+                )}
+                {groupedResponses.deployments.length > 0 && (
+                  <DeploymentsAccordions />
+                )}
+                {groupedResponses.daemonSets.length > 0 && (
+                  <DaemonSetsAccordions />
+                )}
+                {groupedResponses.statefulsets.length > 0 && (
+                  <StatefulSetsAccordions />
+                )}
+                {groupedResponses.ingresses.length > 0 && (
+                  <IngressesAccordions />
+                )}
+                {groupedResponses.services.length > 0 && <ServicesAccordions />}
+                {groupedResponses.configMaps.length > 0 && (
+                  <ConfigmapsAccordions />
+                )}
+                {groupedResponses.secrets.length > 0 && <SecretsAccordions />}
+                {groupedResponses.persistentVolumes.length > 0 && (
+                  <PersistentVolumesAccordions />
+                )}
+                {groupedResponses.persistentVolumeClaims.length > 0 && (
+                  <PersistentVolumeClaimsAccordions />
+                )}
+                {groupedResponses.cronJobs.length > 0 && <CronJobsAccordions />}
+              </Flex>
+            </ResourceAccordion>
           </PodNamesWithErrorsContext.Provider>
         </PodMetricsContext.Provider>
       </GroupedResponsesContext.Provider>

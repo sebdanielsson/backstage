@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { Badge, Flex, Text } from '@backstage/ui';
 import type { V1PersistentVolumeClaim } from '@kubernetes/client-node';
 import { KubernetesStructuredMetadataTableDrawer } from '../KubernetesDrawer';
-import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid';
-import Chip from '@material-ui/core/Chip';
 
 export const PersistentVolumeClaimsDrawer = ({
   persistentVolumeClaim,
@@ -36,29 +34,15 @@ export const PersistentVolumeClaimsDrawer = ({
         return persistentVolumeClaimObject || {};
       }}
     >
-      <Grid
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-        spacing={0}
-      >
-        <Grid item>
-          <Typography variant="body1">
-            {persistentVolumeClaim.metadata?.name ?? 'unknown object'}
-          </Typography>
-        </Grid>
-        <Grid item>
-          <Typography color="textSecondary" variant="subtitle1">
-            PersistentVolumeClaim
-          </Typography>
-        </Grid>
-        {namespace && (
-          <Grid item>
-            <Chip size="small" label={`namespace: ${namespace}`} />
-          </Grid>
-        )}
-      </Grid>
+      <Flex direction="column" align="start" gap="0">
+        <Text variant="body-large">
+          {persistentVolumeClaim.metadata?.name ?? 'unknown object'}
+        </Text>
+        <Text variant="body-large" color="secondary">
+          PersistentVolumeClaim
+        </Text>
+        {namespace && <Badge size="medium">{`namespace: ${namespace}`}</Badge>}
+      </Flex>
     </KubernetesStructuredMetadataTableDrawer>
   );
 };

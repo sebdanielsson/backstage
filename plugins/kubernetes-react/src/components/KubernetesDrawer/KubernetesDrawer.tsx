@@ -17,38 +17,19 @@ import { ReactNode, ChangeEvent, useState } from 'react';
 
 import type { IObjectMeta } from '@kubernetes-models/apimachinery/apis/meta/v1/ObjectMeta';
 import Drawer from '@material-ui/core/Drawer';
-import Grid from '@material-ui/core/Grid';
-import IconButton from '@material-ui/core/IconButton';
-import Switch from '@material-ui/core/Switch';
-import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
 import {
   createStyles,
   makeStyles,
   Theme,
   withStyles,
 } from '@material-ui/core/styles';
-import CloseIcon from '@material-ui/icons/Close';
+import { ButtonIcon, Flex, Switch, Text } from '@backstage/ui';
+import { RiCloseLine } from '@remixicon/react';
 import { ManifestYaml } from './ManifestYaml';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../translation';
-
-const useDrawerContentStyles = makeStyles((_theme: Theme) =>
-  createStyles({
-    header: {
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-    },
-    content: {
-      height: '80%',
-    },
-    icon: {
-      fontSize: 20,
-    },
-  }),
-);
+import styles from './KubernetesDrawer.module.css';
 
 /**
  * The type of object that can be represented by the Drawer
@@ -73,49 +54,33 @@ const KubernetesDrawerContent = ({
   kubernetesObject,
   close,
 }: KubernetesDrawerContentProps) => {
-  const classes = useDrawerContentStyles();
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
   const [isYaml, setIsYaml] = useState<boolean>(false);
 
   return (
     <>
-      <div className={classes.header}>
-        <Grid container justifyContent="flex-start" alignItems="flex-start">
-          <Grid item xs={11}>
-            <Typography variant="h5">
-              {kubernetesObject.metadata?.name}
-            </Typography>
-          </Grid>
-          <Grid item xs={1}>
-            <IconButton
-              key="dismiss"
-              title={t('kubernetesDrawer.closeDrawer')}
-              onClick={() => close()}
-              color="inherit"
-            >
-              <CloseIcon className={classes.icon} />
-            </IconButton>
-          </Grid>
-          <Grid item xs={12}>
-            {header}
-          </Grid>
-          <Grid item xs={12}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={isYaml}
-                  onChange={event => {
-                    setIsYaml(event.target.checked);
-                  }}
-                  name={t('kubernetesDrawer.yaml')}
-                />
-              }
-              label={t('kubernetesDrawer.yaml')}
-            />
-          </Grid>
-        </Grid>
-      </div>
-      <div className={classes.content}>
+      <Flex direction="column" gap="4">
+        <Flex justify="between" align="start">
+          <Text as="h5" variant="title-small" weight="bold">
+            {kubernetesObject.metadata?.name}
+          </Text>
+          <ButtonIcon
+            variant="tertiary"
+            size="medium"
+            aria-label={t('kubernetesDrawer.closeDrawer')}
+            onPress={() => close()}
+            icon={<RiCloseLine size={20} />}
+          />
+        </Flex>
+        {header}
+        <Switch
+          isSelected={isYaml}
+          onChange={setIsYaml}
+          name={t('kubernetesDrawer.yaml')}
+          label={t('kubernetesDrawer.yaml')}
+        />
+      </Flex>
+      <div className={styles.content}>
         {isYaml && <ManifestYaml object={kubernetesObject} />}
         {!isYaml && children}
       </div>

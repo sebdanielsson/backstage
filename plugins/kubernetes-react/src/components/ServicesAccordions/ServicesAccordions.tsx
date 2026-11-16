@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
+import { Flex, Text } from '@backstage/ui';
+import { ResourceAccordion } from '../ResourceAccordion';
 import { useContext } from 'react';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import type { V1Service } from '@kubernetes/client-node';
 import { ServiceDrawer } from './ServiceDrawer';
 import { GroupedResponsesContext } from '../../hooks';
@@ -30,25 +26,11 @@ type ServiceSummaryProps = {
   service: V1Service;
 };
 
-const ServiceSummary = ({ service }: ServiceSummaryProps) => {
+const ServiceStatus = ({ service }: ServiceSummaryProps) => {
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      spacing={0}
-    >
-      <Grid xs={8} item>
-        <ServiceDrawer service={service} />
-      </Grid>
-
-      <Grid item>
-        <Typography variant="subtitle2">
-          Type: {service.spec?.type ?? '?'}
-        </Typography>
-      </Grid>
-    </Grid>
+    <Text variant="body-medium" weight="bold">
+      Type: {service.spec?.type ?? '?'}
+    </Text>
   );
 };
 
@@ -95,14 +77,13 @@ type ServiceAccordionProps = {
 
 const ServiceAccordion = ({ service }: ServiceAccordionProps) => {
   return (
-    <Accordion TransitionProps={{ unmountOnExit: true }} variant="outlined">
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-        <ServiceSummary service={service} />
-      </AccordionSummary>
-      <AccordionDetails>
-        <ServiceCard service={service} />
-      </AccordionDetails>
-    </Accordion>
+    <ResourceAccordion
+      label={service.metadata?.name ?? 'unknown object'}
+      start={<ServiceDrawer service={service} />}
+      status={<ServiceStatus service={service} />}
+    >
+      <ServiceCard service={service} />
+    </ResourceAccordion>
   );
 };
 
@@ -114,17 +95,10 @@ const ServiceAccordion = ({ service }: ServiceAccordionProps) => {
 export const ServicesAccordions = ({}: ServicesAccordionsProps) => {
   const groupedResponses = useContext(GroupedResponsesContext);
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="flex-start"
-      alignItems="flex-start"
-    >
+    <Flex gap="4" align="start">
       {groupedResponses.services.map((service, i) => (
-        <Grid item key={i} xs>
-          <ServiceAccordion service={service} />
-        </Grid>
+        <ServiceAccordion key={i} service={service} />
       ))}
-    </Grid>
+    </Flex>
   );
 };

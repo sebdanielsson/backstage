@@ -19,8 +19,7 @@ import {
   EmptyState,
   LogViewer,
 } from '@backstage/core-components';
-import Paper from '@material-ui/core/Paper';
-import Skeleton from '@material-ui/lab/Skeleton';
+import { Card, Skeleton } from '@backstage/ui';
 
 import { ContainerScope } from './types';
 import { usePodLogs } from './usePodLogs';
@@ -61,11 +60,8 @@ export function PodLogs({ containerScope, previous }: PodLogsProps) {
           id="pod-logs"
         />
       )}
-      <Paper
-        elevation={1}
-        style={{ height: '100%', width: '100%', minHeight: '55rem' }}
-      >
-        {loading && <Skeleton variant="rect" width="100%" height="100%" />}
+      <Card style={{ height: '100%', minHeight: '55rem' }}>
+        {loading && <Skeleton width="100%" height="100%" />}
         {!loading &&
           value !== undefined &&
           (value.text === '' ? (
@@ -77,7 +73,7 @@ export function PodLogs({ containerScope, previous }: PodLogsProps) {
           ) : (
             <LogViewer text={value.text} />
           ))}
-      </Paper>
+      </Card>
     </>
   );
 }

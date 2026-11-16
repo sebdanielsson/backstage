@@ -14,13 +14,9 @@
  * limitations under the License.
  */
 
+import { Text } from '@backstage/ui';
+import { ResourceAccordion } from '../ResourceAccordion';
 import { ReactNode, useContext } from 'react';
-import Accordion from '@material-ui/core/Accordion';
-import AccordionDetails from '@material-ui/core/AccordionDetails';
-import AccordionSummary from '@material-ui/core/AccordionSummary';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import type { V1PersistentVolume } from '@kubernetes/client-node';
 import { PersistentVolumesTable } from './PersistentVolumesTable';
 import { GroupedResponsesContext } from '../../hooks';
@@ -48,43 +44,16 @@ const PersistentVolumesSummary = ({
   numberOfFailedVolumes,
 }: PersistentVolumesSummaryProps) => {
   return (
-    <Grid
-      container
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      spacing={0}
-    >
-      <Grid xs={4} item>
-        <Typography variant="body1">
-          <strong>PersistentVolumes</strong>
-        </Typography>
-      </Grid>
-      <Grid
-        item
-        container
-        xs={8}
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-end"
-        spacing={0}
-      >
-        <Grid item>
-          <StatusOK>{numberOfPersistentVolumes} volumes</StatusOK>
-        </Grid>
-        <Grid item>
-          <StatusOK>{numberOfBoundVolumes} bound</StatusOK>
-        </Grid>
-        {numberOfFailedVolumes > 0 && (
-          <Grid item>
-            <StatusError>
-              {numberOfFailedVolumes} volume
-              {numberOfFailedVolumes > 1 ? 's' : ''} failed
-            </StatusError>
-          </Grid>
-        )}
-      </Grid>
-    </Grid>
+    <>
+      <StatusOK>{numberOfPersistentVolumes} volumes</StatusOK>
+      <StatusOK>{numberOfBoundVolumes} bound</StatusOK>
+      {numberOfFailedVolumes > 0 && (
+        <StatusError>
+          {numberOfFailedVolumes} volume
+          {numberOfFailedVolumes > 1 ? 's' : ''} failed
+        </StatusError>
+      )}
+    </>
   );
 };
 
@@ -99,18 +68,23 @@ const PersistentVolumesAccordion = ({
   );
 
   return (
-    <Accordion TransitionProps={{ unmountOnExit: true }} variant="outlined">
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+    <ResourceAccordion
+      label="PersistentVolumes"
+      start={
+        <Text variant="body-large" weight="bold">
+          PersistentVolumes
+        </Text>
+      }
+      status={
         <PersistentVolumesSummary
           numberOfPersistentVolumes={persistentVolumes.length}
           numberOfBoundVolumes={boundVolumes.length}
           numberOfFailedVolumes={failedVolumes.length}
         />
-      </AccordionSummary>
-      <AccordionDetails>
-        <PersistentVolumesTable persistentVolumes={persistentVolumes} />
-      </AccordionDetails>
-    </Accordion>
+      }
+    >
+      <PersistentVolumesTable persistentVolumes={persistentVolumes} />
+    </ResourceAccordion>
   );
 };
 
@@ -119,19 +93,8 @@ export const PersistentVolumesAccordions =
     const groupedResponses = useContext(GroupedResponsesContext);
 
     return (
-      <Grid
-        container
-        direction="column"
-        justifyContent="flex-start"
-        alignItems="flex-start"
-      >
-        <Grid container item xs>
-          <Grid item xs>
-            <PersistentVolumesAccordion
-              persistentVolumes={groupedResponses.persistentVolumes}
-            />
-          </Grid>
-        </Grid>
-      </Grid>
+      <PersistentVolumesAccordion
+        persistentVolumes={groupedResponses.persistentVolumes}
+      />
     );
   };

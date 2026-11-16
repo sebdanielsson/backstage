@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
+import { Flex, Text } from '@backstage/ui';
 
 import { GaugePropsGetColor, LinearGauge } from '@backstage/core-components';
 import { currentToDeclaredResourceToPerc } from '../../utils/resources';
@@ -67,22 +66,22 @@ export const ResourceUtilization = ({
 }: ResourceUtilizationProps) => {
   const utilization = currentToDeclaredResourceToPerc(usage, total);
   return (
-    <Grid container spacing={0}>
-      <Grid item xs={12}>
-        <Typography
-          variant={compressed ? 'caption' : 'subtitle2'}
-        >{`${title}: ${totalFormatted}`}</Typography>
-      </Grid>
-      <Grid item xs={12}>
+    <Flex direction="column" gap="0">
+      <Text
+        as="p"
+        variant={compressed ? 'body-small' : 'body-medium'}
+        weight={compressed ? 'regular' : 'bold'}
+      >{`${title}: ${totalFormatted}`}</Text>
+      <div>
         <LinearGauge
           getColor={getProgressColor}
           width={compressed ? 'thin' : 'thick'}
           value={utilization / 100}
         />
         {!compressed && (
-          <Typography variant="caption">usage: {`${utilization}%`}</Typography>
+          <Text variant="body-small">usage: {`${utilization}%`}</Text>
         )}
-      </Grid>
-    </Grid>
+      </div>
+    </Flex>
   );
 };

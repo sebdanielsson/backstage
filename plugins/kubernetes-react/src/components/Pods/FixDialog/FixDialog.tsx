@@ -14,40 +14,23 @@
  * limitations under the License.
  */
 import { useState } from 'react';
-
-import Button from '@material-ui/core/Button';
-import Grid from '@material-ui/core/Grid';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
 import DialogTitle from '@material-ui/core/DialogTitle';
-import IconButton from '@material-ui/core/IconButton';
-import { makeStyles, createStyles, Theme } from '@material-ui/core/styles';
-import Typography from '@material-ui/core/Typography';
-import CloseIcon from '@material-ui/icons/Close';
-import HelpIcon from '@material-ui/icons/Help';
-import OpenInNewIcon from '@material-ui/icons/OpenInNew';
-
+import { Button, ButtonIcon, ButtonLink, Flex, Text } from '@backstage/ui';
+import {
+  RiCloseLine,
+  RiExternalLinkLine,
+  RiQuestionFill,
+} from '@remixicon/react';
 import { Pod } from 'kubernetes-models/v1/Pod';
 import { DetectedError } from '@backstage/plugin-kubernetes-common';
 import { PodLogs } from '../PodLogs';
 import { Events } from '../Events';
-import { LinkButton } from '@backstage/core-components';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../../translation';
-
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    closeButton: {
-      position: 'absolute',
-      right: theme.spacing(1),
-      top: theme.spacing(1),
-      color: theme.palette.grey[500],
-    },
-  }),
-);
+import styles from './FixDialog.module.css';
 
 /**
  * Props for FixDialog
@@ -68,57 +51,54 @@ export interface FixDialogProps {
  */
 export function FixDialog({ open, pod, error, clusterName }: FixDialogProps) {
   const [isOpen, setOpen] = useState(!!open);
-  const classes = useStyles();
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
-
-  const openDialog = () => {
-    setOpen(true);
-  };
-
-  const closeDialog = () => {
-    setOpen(false);
-  };
 
   const pf = error.proposedFix;
 
   const dialogContent = () => {
     return (
-      <Grid container>
-        <Grid item xs={12}>
-          <Typography variant="h6">{t('fixDialog.detectedError')}</Typography>
-          <Typography>{error.message}</Typography>
-        </Grid>
-        <Grid item xs={12}>
-          <Typography variant="h6">
+      <Flex direction="column" gap="4">
+        <div>
+          <Text as="h6" variant="title-x-small" weight="bold">
+            {t('fixDialog.detectedError')}
+          </Text>
+          <Text as="p" variant="body-large">
+            {error.message}
+          </Text>
+        </div>
+        <div>
+          <Text as="h6" variant="title-x-small" weight="bold">
             {t('fixDialog.causeExplanation')}
-          </Typography>
-          <Typography>
+          </Text>
+          <Text as="p" variant="body-large">
             {error.proposedFix?.rootCauseExplanation ?? t('podsTable.unknown')}
-          </Typography>
-        </Grid>
-        <Grid item xs={12}>
-          <Typography variant="h6">{t('fixDialog.fix')}</Typography>
-          <List>
+          </Text>
+        </div>
+        <div>
+          <Text as="h6" variant="title-x-small" weight="bold">
+            {t('fixDialog.fix')}
+          </Text>
+          <ul className={styles.list}>
             {(error.proposedFix?.actions ?? []).map((fix, i) => {
               return (
-                <ListItem
+                <li
                   key={`${
                     pod.metadata?.name ?? t('podsTable.unknown')
                   }-pf-${i}`}
+                  className={styles.item}
                 >
-                  {fix}
-                </ListItem>
+                  <Text variant="body-large">{fix}</Text>
+                </li>
               );
             })}
-          </List>
-        </Grid>
-
+          </ul>
+        </div>
         {pf && pf.type === 'logs' && (
           <>
-            <Grid item xs={12}>
-              <Typography variant="h6">{t('fixDialog.crashLogs')}</Typography>
-            </Grid>
-            <Grid item xs={9}>
+            <Text as="h6" variant="title-x-small" weight="bold">
+              {t('fixDialog.crashLogs')}
+            </Text>
+            <div className={styles.details}>
               <PodLogs
                 previous
                 containerScope={{
@@ -129,65 +109,75 @@ export function FixDialog({ open, pod, error, clusterName }: FixDialogProps) {
                   containerName: pf.container,
                 }}
               />
-            </Grid>
+            </div>
           </>
         )}
         {pf && pf.type === 'events' && (
           <>
-            <Grid item xs={12}>
-              <Typography variant="h6">{t('fixDialog.events')}</Typography>
-            </Grid>
-            <Grid item xs={9}>
+            <Text as="h6" variant="title-x-small" weight="bold">
+              {t('fixDialog.events')}
+            </Text>
+            <div className={styles.details}>
               <Events
                 warningEventsOnly
                 involvedObjectName={pod.metadata?.name ?? ''}
                 namespace={pod.metadata?.namespace ?? ''}
                 clusterName={clusterName}
               />
-            </Grid>
+            </div>
           </>
         )}
-      </Grid>
+      </Flex>
     );
   };
 
   return (
     <>
       <Button
-        variant="outlined"
+        variant="secondary"
+        size="medium"
         aria-label={t('fixDialog.ariaLabels.fixIssue')}
-        component="label"
-        onClick={openDialog}
-        startIcon={<HelpIcon />}
+        onPress={() => setOpen(true)}
+        iconStart={<RiQuestionFill size={20} />}
       >
         {t('fixDialog.helpButton')}
       </Button>
-      <Dialog maxWidth="xl" fullWidth open={isOpen} onClose={closeDialog}>
-        <DialogTitle id="dialog-title">
-          {t('fixDialog.title', {
-            podName: pod.metadata?.name ?? '',
-            errorType: error.type,
-          })}
-          <IconButton
-            aria-label={t('fixDialog.ariaLabels.close')}
-            className={classes.closeButton}
-            onClick={closeDialog}
-          >
-            <CloseIcon />
-          </IconButton>
+      <Dialog
+        maxWidth="xl"
+        fullWidth
+        open={isOpen}
+        onClose={() => setOpen(false)}
+      >
+        <DialogTitle id="dialog-title" disableTypography>
+          <Flex justify="between" align="center">
+            <Text as="h2" variant="title-x-small" weight="bold">
+              {t('fixDialog.title', {
+                podName: pod.metadata?.name ?? '',
+                errorType: error.type,
+              })}
+            </Text>
+            <ButtonIcon
+              variant="tertiary"
+              size="medium"
+              aria-label={t('fixDialog.ariaLabels.close')}
+              onPress={() => setOpen(false)}
+              icon={<RiCloseLine size={20} />}
+            />
+          </Flex>
         </DialogTitle>
         <DialogContent>{dialogContent()}</DialogContent>
         <DialogActions>
           {pf && pf.type === 'docs' && (
-            <LinkButton
-              to={pf.docsLink}
-              variant="outlined"
-              startIcon={<OpenInNewIcon />}
+            <ButtonLink
+              variant="secondary"
+              size="medium"
+              href={pf.docsLink}
               target="_blank"
               rel="noopener"
+              iconStart={<RiExternalLinkLine size={20} />}
             >
               {t('fixDialog.openDocs')}
-            </LinkButton>
+            </ButtonLink>
           )}
         </DialogActions>
       </Dialog>

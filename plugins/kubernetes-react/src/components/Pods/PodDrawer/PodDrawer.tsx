@@ -15,9 +15,7 @@
  */
 
 import { ItemCardGrid } from '@backstage/core-components';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { Flex, Grid, Text } from '@backstage/ui';
 
 import { Pod } from 'kubernetes-models/v1';
 
@@ -34,27 +32,7 @@ import { bytesToMiB, formatMillicores } from '../../../utils/resources';
 import { useIsPodDeleteEnabled } from '../../../hooks';
 import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 import { kubernetesReactTranslationRef } from '../../../translation';
-
-const useDrawerContentStyles = makeStyles((_theme: Theme) =>
-  createStyles({
-    header: {
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-    },
-    content: {
-      height: '80%',
-    },
-    icon: {
-      fontSize: 20,
-    },
-    podoklist: {
-      width: '100%',
-      maxWidth: 360,
-      maxHeight: 360,
-    },
-  }),
-);
+import styles from './PodDrawer.module.css';
 
 function getContainerSpecByName(pod: Pod, containerName: string) {
   return pod.spec?.containers.find(c => c.name === containerName);
@@ -76,7 +54,6 @@ export interface PodDrawerProps {
  * @public
  */
 export const PodDrawer = ({ podAndErrors, open }: PodDrawerProps) => {
-  const classes = useDrawerContentStyles();
   const podMetrics = usePodMetrics(podAndErrors.cluster.name, podAndErrors.pod);
   const isPodDeleteEnabled = useIsPodDeleteEnabled();
   const { t } = useTranslationRef(kubernetesReactTranslationRef);
@@ -85,20 +62,20 @@ export const PodDrawer = ({ podAndErrors, open }: PodDrawerProps) => {
     <KubernetesDrawer
       open={open}
       drawerContentsHeader={
-        <Typography variant="subtitle1">
+        <Text variant="body-large">
           Pod{' '}
           {podAndErrors.pod.status?.podIP &&
             `(${podAndErrors.pod.status?.podIP})`}
-        </Typography>
+        </Text>
       }
       kubernetesObject={podAndErrors.pod}
       label={
-        <Typography variant="subtitle1">
+        <Text variant="body-large">
           {podAndErrors.pod.metadata?.name ?? 'unknown'}
-        </Typography>
+        </Text>
       }
     >
-      <div className={classes.content}>
+      <div className={styles.content}>
         {isPodDeleteEnabled && (
           <PodDeleteButton
             podScope={{
@@ -109,13 +86,13 @@ export const PodDrawer = ({ podAndErrors, open }: PodDrawerProps) => {
           />
         )}
         {podMetrics && (
-          <Grid container item xs={12}>
-            <Grid item xs={12}>
-              <Typography variant="h5">
+          <Grid.Root columns="2" gap="4">
+            <Grid.Item colSpan="2">
+              <Text as="h5" variant="title-small" weight="bold">
                 {t('podDrawer.resourceUtilization')}
-              </Typography>
-            </Grid>
-            <Grid item xs={6}>
+              </Text>
+            </Grid.Item>
+            <Grid.Item>
               <ResourceUtilization
                 title={t('podDrawer.cpuRequests')}
                 usage={podMetrics.cpu.currentUsage}
@@ -128,8 +105,8 @@ export const PodDrawer = ({ podAndErrors, open }: PodDrawerProps) => {
                 total={podMetrics.cpu.limitTotal}
                 totalFormatted={formatMillicores(podMetrics.cpu.limitTotal)}
               />
-            </Grid>
-            <Grid item xs={6}>
+            </Grid.Item>
+            <Grid.Item>
               <ResourceUtilization
                 title={t('podDrawer.memoryRequests')}
                 usage={podMetrics.memory.currentUsage}
@@ -142,57 +119,53 @@ export const PodDrawer = ({ podAndErrors, open }: PodDrawerProps) => {
                 total={podMetrics.memory.limitTotal}
                 totalFormatted={bytesToMiB(podMetrics.memory.limitTotal)}
               />
-            </Grid>
-          </Grid>
+            </Grid.Item>
+          </Grid.Root>
         )}
         {podAndErrors.pod.status?.phase === 'Pending' && (
           <PendingPodContent pod={podAndErrors.pod} />
         )}
         {podAndErrors.pod.status?.containerStatuses?.length && (
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <Typography variant="h5">Containers</Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <ItemCardGrid>
-                {podAndErrors.pod.status?.containerStatuses?.map(
-                  (containerStatus, i) => {
-                    const containerSpec = getContainerSpecByName(
-                      podAndErrors.pod,
-                      containerStatus.name,
-                    );
-                    const containerMetrics = (
-                      podMetrics?.containers ?? []
-                    ).find(c => c.container === containerStatus.name);
-                    return (
-                      <ContainerCard
-                        key={`container-card-${podAndErrors.pod.metadata?.name}-${i}`}
-                        containerMetrics={containerMetrics}
-                        podScope={{
-                          podName: podAndErrors.pod.metadata?.name ?? 'unknown',
-                          podNamespace:
-                            podAndErrors.pod.metadata?.namespace ?? 'unknown',
-                          cluster: podAndErrors.cluster,
-                        }}
-                        containerSpec={containerSpec}
-                        containerStatus={containerStatus}
-                      />
-                    );
-                  },
-                )}
-              </ItemCardGrid>
-            </Grid>
+          <Flex direction="column" gap="4">
+            <Text as="h5" variant="title-small" weight="bold">
+              Containers
+            </Text>
+            <ItemCardGrid>
+              {podAndErrors.pod.status?.containerStatuses?.map(
+                (containerStatus, i) => {
+                  const containerSpec = getContainerSpecByName(
+                    podAndErrors.pod,
+                    containerStatus.name,
+                  );
+                  const containerMetrics = (podMetrics?.containers ?? []).find(
+                    c => c.container === containerStatus.name,
+                  );
+                  return (
+                    <ContainerCard
+                      key={`container-card-${podAndErrors.pod.metadata?.name}-${i}`}
+                      containerMetrics={containerMetrics}
+                      podScope={{
+                        podName: podAndErrors.pod.metadata?.name ?? 'unknown',
+                        podNamespace:
+                          podAndErrors.pod.metadata?.namespace ?? 'unknown',
+                        cluster: podAndErrors.cluster,
+                      }}
+                      containerSpec={containerSpec}
+                      containerStatus={containerStatus}
+                    />
+                  );
+                },
+              )}
+            </ItemCardGrid>
             {podAndErrors.errors.length > 0 && (
-              <Grid item xs={12}>
-                <Typography variant="h5">Errors</Typography>
-              </Grid>
+              <Text as="h5" variant="title-small" weight="bold">
+                Errors
+              </Text>
             )}
             {podAndErrors.errors.length > 0 && (
-              <Grid item xs={12}>
-                <ErrorList podAndErrors={[podAndErrors]} />
-              </Grid>
+              <ErrorList podAndErrors={[podAndErrors]} />
             )}
-          </Grid>
+          </Flex>
         )}
       </div>
     </KubernetesDrawer>
