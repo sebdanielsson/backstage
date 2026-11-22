@@ -25,33 +25,78 @@ export type SecretStore = {
   delete(service: string, account: string): Promise<void>;
 };
 
-async function loadKeytar(): Promise<typeof import('keytar') | undefined> {
+type Keyring = typeof import('@napi-rs/keyring');
+
+// On Linux, only the Secret Service keeps secrets across reboots, and
+// without one @napi-rs/keyring falls back to the kernel keyring. Require it,
+// so that the file store is used instead when it isn't available.
+const ENTRY_OPTIONS = { linux: { store: 'secret-service' as const } };
+
+function createEntry(keyring: Keyring, service: string, account: string) {
+  // keytar's target name on Windows, so that logins it stored keep working
+  if (process.platform === 'win32') {
+    return keyring.AsyncEntry.withTarget(
+      `${service}/${account}`,
+      service,
+      account,
+      ENTRY_OPTIONS,
+    );
+  }
+  return new keyring.AsyncEntry(service, account, ENTRY_OPTIONS);
+}
+
+function loadKeyring(): Keyring | undefined {
   try {
     // eslint-disable-next-line import/no-extraneous-dependencies, @backstage/no-undeclared-imports
-    const keytar = require('keytar') as typeof import('keytar');
-    if (keytar && typeof keytar.getPassword === 'function') {
-      return keytar;
-    }
+    const keyring = require('@napi-rs/keyring') as Keyring;
+    // Throws when the system credential store isn't available
+    createEntry(keyring, 'backstage-cli', 'availability-check');
+    return keyring;
   } catch {
-    // keytar not available
+    // @napi-rs/keyring or the system credential store isn't available
   }
   return undefined;
 }
 
-class KeytarSecretStore implements SecretStore {
-  private readonly keytar: typeof import('keytar');
-  constructor(keytar: typeof import('keytar')) {
-    this.keytar = keytar;
+// Secrets are stored as UTF-8 bytes, as keytar stored them. Passwords would be
+// stored as UTF-16 on Windows, which halves the length that fits.
+class KeyringSecretStore implements SecretStore {
+  private readonly keyring: Keyring;
+  private readonly fileStore: SecretStore;
+  constructor(keyring: Keyring, fileStore: SecretStore) {
+    this.keyring = keyring;
+    this.fileStore = fileStore;
   }
   async get(service: string, account: string): Promise<string | undefined> {
-    const result = await this.keytar.getPassword(service, account);
-    return result ?? undefined;
+    const secret = await createEntry(
+      this.keyring,
+      service,
+      account,
+    ).getSecret();
+    if (secret) {
+      return Buffer.from(secret).toString('utf8');
+    }
+    // Earlier versions used files when keytar couldn't be loaded, so move a
+    // secret that's still in one into the credential store.
+    const legacySecret = await this.fileStore.get(service, account);
+    if (legacySecret !== undefined) {
+      try {
+        await this.set(service, account, legacySecret);
+      } catch {
+        // Keep using the file until the credential store accepts it
+      }
+    }
+    return legacySecret;
   }
   async set(service: string, account: string, secret: string): Promise<void> {
-    await this.keytar.setPassword(service, account, secret);
+    await createEntry(this.keyring, service, account).setSecret(
+      Buffer.from(secret, 'utf8'),
+    );
+    await this.fileStore.delete(service, account);
   }
   async delete(service: string, account: string): Promise<void> {
-    await this.keytar.deletePassword(service, account);
+    await createEntry(this.keyring, service, account).deletePassword();
+    await this.fileStore.delete(service, account);
   }
 }
 
@@ -110,9 +155,9 @@ let singleton: SecretStore | undefined;
 /** @internal */
 export async function getSecretStore(): Promise<SecretStore> {
   if (!singleton) {
-    const keytar = await loadKeytar();
-    if (keytar) {
-      singleton = new KeytarSecretStore(keytar);
+    const keyring = loadKeyring();
+    if (keyring) {
+      singleton = new KeyringSecretStore(keyring, new FileSecretStore());
     } else {
       singleton = new FileSecretStore();
     }

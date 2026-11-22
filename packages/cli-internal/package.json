@@ -26,5 +26,8 @@
   },
   "devDependencies": {
     "@backstage/cli": "workspace:^"
+  },
+  "optionalDependencies": {
+    "@napi-rs/keyring": "^2.1.2"
   }
 }

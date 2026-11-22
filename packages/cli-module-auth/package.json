@@ -50,6 +50,6 @@
     "@types/proper-lockfile": "^4"
   },
   "optionalDependencies": {
-    "keytar": "^7.9.0"
+    "@napi-rs/keyring": "^2.1.2"
   }
 }

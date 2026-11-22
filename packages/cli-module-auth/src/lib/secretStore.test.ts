@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-jest.mock('keytar', () => {
-  throw new Error('keytar not available');
+jest.mock('@napi-rs/keyring', () => {
+  throw new Error('@napi-rs/keyring not available');
 });
 
 import fs from 'fs-extra';
@@ -230,7 +230,7 @@ describe('secretStore', () => {
   });
 
   describe('fallback behavior', () => {
-    it('should fall back to FileSecretStore when keytar is not available', async () => {
+    it('should fall back to FileSecretStore when @napi-rs/keyring is not available', async () => {
       const store = await getSecretStore();
       await store.set('test-service', 'test-account', 'test-secret');
 

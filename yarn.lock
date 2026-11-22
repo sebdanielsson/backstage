@@ -2126,18 +2126,18 @@ __metadata:
     "@backstage/cli": "workspace:^"
     "@backstage/cli-node": "workspace:^"
     "@backstage/errors": "workspace:^"
+    "@napi-rs/keyring": "npm:^2.1.2"
     "@types/fs-extra": "npm:^11.0.0"
     "@types/proper-lockfile": "npm:^4"
     cleye: "npm:^2.6.0"
     fs-extra: "npm:^11.2.0"
     glob: "npm:^14.0.0"
     inquirer: "npm:^8.2.0"
-    keytar: "npm:^7.9.0"
     proper-lockfile: "npm:^4.1.2"
     yaml: "npm:^2.0.0"
     zod: "npm:^4.0.0"
   dependenciesMeta:
-    keytar:
+    "@napi-rs/keyring":
       optional: true
   bin:
     cli-module-auth: bin/backstage-cli-module-auth
@@ -2525,6 +2525,7 @@ __metadata:
     "@backstage/test-utils": "workspace:^"
     "@backstage/types": "workspace:^"
     "@manypkg/get-packages": "npm:^1.1.3"
+    "@napi-rs/keyring": "npm:^2.1.2"
     "@types/proper-lockfile": "npm:^4"
     "@types/yarnpkg__lockfile": "npm:^1.1.4"
     "@yarnpkg/lockfile": "npm:^1.1.0"
@@ -2532,7 +2533,6 @@ __metadata:
     chalk: "npm:^4.0.0"
     cleye: "npm:^2.6.0"
     fs-extra: "npm:^11.2.0"
-    keytar: "npm:^7.9.0"
     pirates: "npm:^4.0.6"
     proper-lockfile: "npm:^4.1.2"
     semver: "npm:^7.5.3"
@@ -2541,7 +2541,7 @@ __metadata:
   peerDependencies:
     "@swc/core": ^1.15.6
   dependenciesMeta:
-    keytar:
+    "@napi-rs/keyring":
       optional: true
   peerDependenciesMeta:
     "@swc/core":
@@ -9976,6 +9976,10 @@ __metadata:
   dependencies:
     "@backstage/cli": "workspace:^"
     "@backstage/cli-node": "workspace:^"
+    "@napi-rs/keyring": "npm:^2.1.2"
+  dependenciesMeta:
+    "@napi-rs/keyring":
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -11987,6 +11991,135 @@ __metadata:
   version: 3.1.0
   resolution: "@n1ru4l/push-pull-async-iterable-iterator@npm:3.1.0"
   checksum: 10/9b6134e9e15746a0dd0ac092a94e1d36ff4e624f2c1b238b0b5e1b9f5502182d6d09ed5cea1c60ca1f2e4f8ffb9c9877fc723a352615d75d876feb0243869f57
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-darwin-arm64@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-darwin-arm64@npm:2.1.2"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-darwin-x64@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-darwin-x64@npm:2.1.2"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-freebsd-x64@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-freebsd-x64@npm:2.1.2"
+  conditions: os=freebsd & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-arm-gnueabihf@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-linux-arm-gnueabihf@npm:2.1.2"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-arm64-gnu@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-linux-arm64-gnu@npm:2.1.2"
+  conditions: os=linux & cpu=arm64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-arm64-musl@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-linux-arm64-musl@npm:2.1.2"
+  conditions: os=linux & cpu=arm64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-riscv64-gnu@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-linux-riscv64-gnu@npm:2.1.2"
+  conditions: os=linux & cpu=riscv64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-x64-gnu@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-linux-x64-gnu@npm:2.1.2"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-linux-x64-musl@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-linux-x64-musl@npm:2.1.2"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-win32-arm64-msvc@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-win32-arm64-msvc@npm:2.1.2"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-win32-ia32-msvc@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-win32-ia32-msvc@npm:2.1.2"
+  conditions: os=win32 & cpu=ia32
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring-win32-x64-msvc@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring-win32-x64-msvc@npm:2.1.2"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@napi-rs/keyring@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "@napi-rs/keyring@npm:2.1.2"
+  dependencies:
+    "@napi-rs/keyring-darwin-arm64": "npm:2.1.2"
+    "@napi-rs/keyring-darwin-x64": "npm:2.1.2"
+    "@napi-rs/keyring-freebsd-x64": "npm:2.1.2"
+    "@napi-rs/keyring-linux-arm-gnueabihf": "npm:2.1.2"
+    "@napi-rs/keyring-linux-arm64-gnu": "npm:2.1.2"
+    "@napi-rs/keyring-linux-arm64-musl": "npm:2.1.2"
+    "@napi-rs/keyring-linux-riscv64-gnu": "npm:2.1.2"
+    "@napi-rs/keyring-linux-x64-gnu": "npm:2.1.2"
+    "@napi-rs/keyring-linux-x64-musl": "npm:2.1.2"
+    "@napi-rs/keyring-win32-arm64-msvc": "npm:2.1.2"
+    "@napi-rs/keyring-win32-ia32-msvc": "npm:2.1.2"
+    "@napi-rs/keyring-win32-x64-msvc": "npm:2.1.2"
+  dependenciesMeta:
+    "@napi-rs/keyring-darwin-arm64":
+      optional: true
+    "@napi-rs/keyring-darwin-x64":
+      optional: true
+    "@napi-rs/keyring-freebsd-x64":
+      optional: true
+    "@napi-rs/keyring-linux-arm-gnueabihf":
+      optional: true
+    "@napi-rs/keyring-linux-arm64-gnu":
+      optional: true
+    "@napi-rs/keyring-linux-arm64-musl":
+      optional: true
+    "@napi-rs/keyring-linux-riscv64-gnu":
+      optional: true
+    "@napi-rs/keyring-linux-x64-gnu":
+      optional: true
+    "@napi-rs/keyring-linux-x64-musl":
+      optional: true
+    "@napi-rs/keyring-win32-arm64-msvc":
+      optional: true
+    "@napi-rs/keyring-win32-ia32-msvc":
+      optional: true
+    "@napi-rs/keyring-win32-x64-msvc":
+      optional: true
+  checksum: 10/dba1f4657be661788d051ce29690d89e462516366678f0d8df3eea94c12498de248cf10e3a64e4240cfa2e048d9a55155b20bfb9a595b9f9bab0dec3e00b0c85
   languageName: node
   linkType: hard
 
@@ -33410,17 +33543,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"keytar@npm:^7.9.0":
-  version: 7.9.0
-  resolution: "keytar@npm:7.9.0"
-  dependencies:
-    node-addon-api: "npm:^4.3.0"
-    node-gyp: "npm:latest"
-    prebuild-install: "npm:^7.0.1"
-  checksum: 10/904795bc304f8ad89b80f915c869a941a383312b58584212a199473d18647035cfda92a9c53e6c53bf13ea0fed23037c9597eb418a5c71ee9454f140f026fac9
-  languageName: node
-  linkType: hard
-
 "keyv@npm:*, keyv@npm:^5.2.1":
   version: 5.6.0
   resolution: "keyv@npm:5.6.0"
@@ -36051,15 +36173,6 @@ __metadata:
   version: 3.1.1
   resolution: "node-abort-controller@npm:3.1.1"
   checksum: 10/0a2cdb7ec0aeaf3cb31e1ca0e192f5add48f1c5c9c9ed822129f9dddbd9432f69b7425982f94ce803c56a2104884530aa67cd57696e5774b2e5b8ec2f58de042
-  languageName: node
-  linkType: hard
-
-"node-addon-api@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "node-addon-api@npm:4.3.0"
-  dependencies:
-    node-gyp: "npm:latest"
-  checksum: 10/d3b38d16cb9ad0714d965331d0e38cef1c27750c2c3343cd3464a9ed8158501a2910ccbf2fd9fdc476e806a19dbc9e0524ff9d66a7c779d42a9752a63ba30b80
   languageName: node
   linkType: hard
 
@@ -38903,7 +39016,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prebuild-install@npm:^7.0.1, prebuild-install@npm:^7.1.1":
+"prebuild-install@npm:^7.1.1":
   version: 7.1.3
   resolution: "prebuild-install@npm:7.1.3"
   dependencies:
