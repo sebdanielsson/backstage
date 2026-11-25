@@ -51,6 +51,11 @@ class FixedJSDOMEnvironment extends JSDOMEnvironment {
     this.global.TransformStream = TransformStream;
     this.global.WritableStream = WritableStream;
 
+    // Jest leaves these out of jsdom, but msw relies on them when mocking
+    // requests made with node:http
+    this.global.setImmediate = setImmediate;
+    this.global.clearImmediate = clearImmediate;
+
     // Needed to ensure `e instanceof Error` works as expected with errors thrown from
     // any of the native APIs above. Without this, the JSDOM `Error` is what the test
     // code will use for comparison with `e`, which fails the instanceof check.

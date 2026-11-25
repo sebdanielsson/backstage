@@ -47,7 +47,8 @@
     "yargs": "^16.2.0"
   },
   "devDependencies": {
-    "@backstage/cli": "workspace:^"
+    "@backstage/cli": "workspace:^",
+    "@mswjs/interceptors": "^0.45.12"
   },
   "peerDependencies": {
     "@jest/environment-jsdom-abstract": "^30.0.0",

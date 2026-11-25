@@ -563,6 +563,9 @@ automatically detect and use `src/setupTests.ts` if it exists, and provides a
 coverage configuration that works well with our selected transpilers. The configuration
 will also detect the appropriate Jest environment for each package role, running
 `web-libraries` with the `"jsdom"` environment, `node-libraries` with `"node"`, and so on.
+With Jest 30, the `"jsdom"` environment also provides Node.js globals that jsdom
+leaves out, such as `fetch`, `TextEncoder`, and `setImmediate`, so that libraries
+like [`msw`](https://mswjs.io/) work in frontend tests.
 
 The configuration also takes a project-wide approach, with the expectation most
 if not all packages within a monorepo will use the same base configuration. This

@@ -2472,6 +2472,7 @@ __metadata:
     "@backstage/cli": "workspace:^"
     "@backstage/cli-common": "workspace:^"
     "@backstage/cli-node": "workspace:^"
+    "@mswjs/interceptors": "npm:^0.45.12"
     "@swc/core": "npm:^1.15.6"
     "@swc/jest": "npm:^0.2.39"
     cleye: "npm:^2.6.0"
@@ -11799,7 +11800,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mswjs/interceptors@npm:^0.45.11":
+"@mswjs/interceptors@npm:^0.45.11, @mswjs/interceptors@npm:^0.45.12":
   version: 0.45.12
   resolution: "@mswjs/interceptors@npm:0.45.12"
   dependencies:
